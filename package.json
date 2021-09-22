@@ -1,11 +1,10 @@
 {
   "name": "parser",
   "version": "1.0.0",
-  "description": "test",
+  "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index",
-    "auth": "node auth.js"
+    "start": "node index"
   },
   "author": "Iskandarov Timur",
   "license": "MIT",
