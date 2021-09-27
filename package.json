@@ -4,12 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index"
+    "start": "node index",
+    "tyres": "node tyres-parser"
   },
   "author": "Iskandarov Timur",
   "license": "MIT",
   "dependencies": {
-    "node-fetch": "^2.6.1",
+    "exceljs": "^4.3.0",
+    "node-fetch": "^2.6.5",
     "prompt": "^1.2.0",
     "prompt-async": "^0.9.9",
     "selenium-webdriver": "^4.0.0-beta.4"

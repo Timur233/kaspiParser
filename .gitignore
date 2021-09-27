@@ -19,6 +19,7 @@ Thumbs.db
 composer.phar
 
 /node_modules
+/files
 
 # sensitive data
 .env
