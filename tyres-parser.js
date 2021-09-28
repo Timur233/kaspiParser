@@ -37,30 +37,18 @@ const screen = {
         selectCity = await selectCity.getAttribute('textContent')
 
         if (selectCity != '') {
+
             await driver.findElement(By.css('a[data-city-id="750000000"]')).click();
             var tyres = await driver.findElements(By.css('.item-card__name-link'));
 
-            for (let tyre in tyres) {
-                let url = await tyres[tyre].getAttribute('href');
-                console.log(url);
-                await driver.get(url);
+            let links = await mapLinksObj (tyres)
+            let data = {}
 
-                let name = await driver.findElements(By.css('.item__heading'));
-            
-                let data = {
-                    name: name, 
-                    width: 'data.width',
-                    height: 'data.height',
-                    dia: 'data.dia',
-                    season: 'data.season',
-                    thorns: 'data.thorns',
-                    saller: 'data.saller',
-                    price: 'data.price',
-                    link: 'data.link',
-                }
-
-                await addExcelLine(data)
+            for (let i in links) {
+                await openTab(driver, links[i])
             }
+
+            
 
 
         } else {
@@ -73,6 +61,117 @@ const screen = {
     }
 
     await workbook.xlsx.writeFile('files/tyres.xlsx')
+
+    async function mapLinksObj (tyres) {
+        try {
+            
+            let links = []
+
+            for (let tyre in tyres) {
+                links.push(await tyres[tyre].getAttribute('href'))
+            }
+
+            return links
+            
+        } 
+        catch {
+            console.log('Error');
+        }
+    }
+
+    async function openTab (driver, link) {
+        
+        const originalWindow = await driver.getWindowHandle();
+
+        try {
+            await driver.switchTo().newWindow('tab');
+            await driver.navigate().to(link);
+            await collectDataForProduct(driver, link);
+        } 
+        catch (e) {
+            console.log(e);
+        }
+        finally {
+            await driver.close();
+            await driver.switchTo().window(originalWindow);
+        }
+
+    }
+
+    async function collectDataForProduct(driver, link) {
+        
+        let name = await driver.findElement(By.css('.item__heading'));
+        let price = await getSallerPrice(driver);
+        // let width = 
+        // let height = 
+        // let dia = 
+        // let season = 
+        // let thorns =
+        // let saller = 
+        // let price = 
+        // let link =
+        // let code = await driver.findElement(By.css('.item__sku')).getText();
+
+        let data = {
+            name: await name.getText(), 
+            width: 'data.width',
+            height: 'data.height',
+            dia: 'data.dia',
+            season: 'data.season',
+            thorns: 'data.thorns',
+            saller: 'Tyres Trade',
+            price: price,
+            link: link,
+            //code: await code.replace("Код товара:", "")
+        }
+
+        addExcelLine(data)
+
+    }
+
+    async function getSallerPrice(driver) {
+        console.log('product');
+        try {
+            let paginations = await driver.findElements(By.css('.pagination__el'));
+            for (let i in paginations) {
+                await paginations[i].click();
+
+                let collection = await collectPrice(driver);
+                //console.log(await collection);
+                if (await collection) {
+                    //console.log(await collection);
+                    return await collection;
+                }
+            }
+        }
+        catch {
+            return await collectPrice(driver);
+        }
+        console.log('/product');
+
+        async function collectPrice(driver) {
+            
+            let sallers = await driver.findElements(By.css('.sellers-table__self>tbody>tr>td:first-child>a'));
+            let i = 0;
+            for (i in sallers) {
+                console.log(i);
+                if (await sallers[i].getText() == 'Tyres Trade') {
+                    try {
+                        let price = await driver.findElement(By.css('.sellers-table__self>tbody>tr:nth-child(' + (i + 1) + ')>td:nth-child(4)>.sellers-table__price-cell-text'));
+                        return await price.getText();
+                    } catch (e) {
+                        console.log(e);
+                    }
+                    
+                } 
+
+            }
+
+            return false;
+
+        }
+
+    }
 
     async function addExcelLine(data) {
         worksheet.insertRow(2, {
