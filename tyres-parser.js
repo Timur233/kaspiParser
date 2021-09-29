@@ -10,6 +10,7 @@ const { Options } = require('selenium-webdriver/chrome');
 const fetch = require('node-fetch');
 const prompt = require("prompt-async");
 const ExcelJS = require('exceljs');
+let fs = require('fs');
 const screen = {
     width: 1920,
     height: 1080
@@ -28,17 +29,12 @@ const screen = {
 
     try {
 
-        //await authKaspi(driver);
-
         await driver.navigate().to('https://kaspi.kz/shop/search/?text=%D1%88%D0%B8%D0%BD%D1%8B:category:Tires:allMerchants:TyresTrade');
+        await driver.findElement(By.css('a[data-city-id="750000000"]')).click();
 
-        // CHECK BOT
-        let selectCity =  await driver.wait(until.elementLocated(By.css('a[data-city-id="750000000"]')), 10000)
-        selectCity = await selectCity.getAttribute('textContent')
+        for (let page = 1; page <= 84; page++) {
 
-        if (selectCity != '') {
-
-            await driver.findElement(By.css('a[data-city-id="750000000"]')).click();
+            await driver.navigate().to('https://kaspi.kz/shop/search/?text=%D1%88%D0%B8%D0%BD%D1%8B:category:Tires:allMerchants:TyresTrade&page='+page);
             var tyres = await driver.findElements(By.css('.item-card__name-link'));
 
             let links = await mapLinksObj (tyres)
@@ -47,12 +43,7 @@ const screen = {
             for (let i in links) {
                 await openTab(driver, links[i])
             }
-
-            
-
-
-        } else {
-            //await sendNotification('Начало обхода', 'Джастин у нас проблемы с защитой от ботов')
+        
         }
 
     }
@@ -102,23 +93,20 @@ const screen = {
         
         let name = await driver.findElement(By.css('.item__heading'));
         let price = await getSallerPrice(driver);
-        // let width = 
-        // let height = 
-        // let dia = 
-        // let season = 
-        // let thorns =
-        // let saller = 
-        // let price = 
-        // let link =
+        let width = await collectProductFields(driver, 'Ширина профиля');
+        let height = await collectProductFields(driver, 'Высота профиля');
+        let dia = await collectProductFields(driver, 'Высота профиля');
+        let season = await collectProductFields(driver, 'Сезонность');
+        let thorns = await collectProductFields(driver, 'Шипы');
         // let code = await driver.findElement(By.css('.item__sku')).getText();
 
         let data = {
             name: await name.getText(), 
-            width: 'data.width',
-            height: 'data.height',
-            dia: 'data.dia',
-            season: 'data.season',
-            thorns: 'data.thorns',
+            width: width,
+            height: height,
+            dia: dia,
+            season: season,
+            thorns: thorns,
             saller: 'Tyres Trade',
             price: price,
             link: link,
@@ -129,35 +117,74 @@ const screen = {
 
     }
 
-    async function getSallerPrice(driver) {
-        console.log('product');
-        try {
-            let paginations = await driver.findElements(By.css('.pagination__el'));
-            for (let i in paginations) {
-                await paginations[i].click();
+    async function collectProductFields (driver, pattern) {
 
-                let collection = await collectPrice(driver);
-                //console.log(await collection);
-                if (await collection) {
-                    //console.log(await collection);
-                    return await collection;
-                }
+        let spec = await driver.findElement(By.css(".item-content__tab[data-tab='specifications']")).click();
+        let fields = await driver.findElements(By.css(".specifications-list__spec"));
+        
+        for (let i in fields) {
+            let label = await fields[i].findElement(By.css(".specifications-list__spec-term-text"));
+            if (await label.getText() == pattern) {
+                return await fields[i].findElement(By.css(".specifications-list__spec-definition")).getText();
             }
         }
-        catch {
-            return await collectPrice(driver);
+
+        let sallers = await driver.findElement(By.css(".item-content__tab[data-tab='sellers']")).click();
+
+    }
+
+    async function getSallerPrice(driver) {
+        
+        try {
+
+            let sallers = await driver.findElement(By.css(".item-content__tab[data-tab='sellers']")).click();
+
+            let collection = await collectPriceForSaller();
+            if (collection) {
+                return await collection;
+            }
+
+            let paginations = await driver.findElements(By.css('.pagination>li:not(:first-child):not(:last-child):not(._active)'));
+
+                for (var i in paginations) {
+                    console.log(await paginations[i].getText()); 
+                    await paginations[i].click();
+                    //let encodedString = await driver.takeScreenshot();
+                    //await fs.writeFileSync('./image.png', encodedString, 'base64');
+                    let collection = await driver.wait(() => collectPriceForSaller(), 10000);
+                    if (collection !== false) {
+                        return await collection;
+                    } 
+
+                }
+
+
         }
-        console.log('/product');
+
+        catch {
+            
+        }
+
+        async function collectPriceForSaller() {
+            let sallers = await driver.findElements(By.css('.sellers-table__self>tbody>tr'))
+            for (i in sallers) {
+                let saller = await sallers[i].findElement(By.css('td:first-child>a')).getText();
+                if (saller == 'Tyres Trade') {
+                    let price = await sallers[i].findElement(By.css('.sellers-table__price-cell-text:not(._installments-price)')).getText();
+                    return price;
+                }
+            } 
+            return false;
+        }
 
         async function collectPrice(driver) {
             
             let sallers = await driver.findElements(By.css('.sellers-table__self>tbody>tr>td:first-child>a'));
             let i = 0;
             for (i in sallers) {
-                console.log(i);
                 if (await sallers[i].getText() == 'Tyres Trade') {
                     try {
-                        let price = await driver.findElement(By.css('.sellers-table__self>tbody>tr:nth-child(' + (i + 1) + ')>td:nth-child(4)>.sellers-table__price-cell-text'));
+                        let price = await driver.findElement(By.css('.sellers-table__self>tbody>tr:nth-child(' + ((i*1) + 1) + ')>td:nth-child(4)>.sellers-table__price-cell-text'));
                         return await price.getText();
                     } catch (e) {
                         console.log(e);
@@ -199,6 +226,7 @@ const screen = {
             { header: 'Продавец', key: 'saller', width: 15 },
             { header: 'Цена', key: 'price', width: 15 },
             { header: 'Ссылка', key: 'link', width: 30 },
+            //{ header: 'Код товара', key: 'code', width: 10 },
         ];
         worksheet.columns = colums;
 
