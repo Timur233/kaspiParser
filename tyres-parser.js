@@ -29,12 +29,12 @@ const screen = {
 
     try {
 
-        await driver.navigate().to('https://kaspi.kz/shop/search/?text=%D1%88%D0%B8%D0%BD%D1%8B:category:Tires:allMerchants:TyresTrade');
+        await driver.navigate().to('https://kaspi.kz/shop/c/categories/?q=%3AallMerchants%3ARs6');
         await driver.findElement(By.css('a[data-city-id="750000000"]')).click();
 
-        for (let page = 1; page <= 84; page++) {
+        for (let page = 1; page <= 54; page++) { //54
 
-            await driver.navigate().to('https://kaspi.kz/shop/search/?text=%D1%88%D0%B8%D0%BD%D1%8B:category:Tires:allMerchants:TyresTrade&page='+page);
+            await driver.navigate().to('https://kaspi.kz/shop/c/categories/?q=%3AallMerchants%3ARs6&page='+page);
             var tyres = await driver.findElements(By.css('.item-card__name-link'));
 
             let links = await mapLinksObj (tyres)
@@ -92,25 +92,25 @@ const screen = {
     async function collectDataForProduct(driver, link) {
         
         let name = await driver.findElement(By.css('.item__heading'));
-        let price = await getSallerPrice(driver);
-        let width = await collectProductFields(driver, 'Ширина профиля');
-        let height = await collectProductFields(driver, 'Высота профиля');
-        let dia = await collectProductFields(driver, 'Высота профиля');
-        let season = await collectProductFields(driver, 'Сезонность');
-        let thorns = await collectProductFields(driver, 'Шипы');
-        // let code = await driver.findElement(By.css('.item__sku')).getText();
+        //let price = await getSallerPrice(driver);
+        //let width = await collectProductFields(driver, 'Ширина профиля');
+        //let height = await collectProductFields(driver, 'Высота профиля');
+        //let dia = await collectProductFields(driver, 'Высота профиля');
+        //let season = await collectProductFields(driver, 'Сезонность');
+        //let thorns = await collectProductFields(driver, 'Шипы');
+        let code = await driver.findElement(By.css('.item__sku')).getText();
 
         let data = {
             name: await name.getText(), 
-            width: width,
-            height: height,
-            dia: dia,
-            season: season,
-            thorns: thorns,
-            saller: 'Tyres Trade',
-            price: price,
+            //width: width,
+            //height: height,
+            //dia: dia,
+            //season: season,
+            //thorns: thorns,
+            //saller: 'Tyres Trade',
+            //price: price,
             link: link,
-            //code: await code.replace("Код товара:", "")
+            code: await code.replace("Код товара:", "")
         }
 
         addExcelLine(data)
@@ -203,14 +203,15 @@ const screen = {
     async function addExcelLine(data) {
         worksheet.insertRow(2, {
             name: data.name, 
-            width: data.width,
-            height: data.height,
-            dia: data.dia,
-            season: data.season,
-            thorns: data.thorns,
-            saller: data.saller,
-            price: data.price,
+            //width: data.width,
+            //height: data.height,
+            //dia: data.dia,
+            //season: data.season,
+            //thorns: data.thorns,
+            //saller: data.saller,
+            //price: data.price,
             link: data.link,
+            code: data.code
         });
     }
 
@@ -218,15 +219,15 @@ const screen = {
 
         let colums = [
             { header: 'Название', key: 'name', width: 40 },
-            { header: 'Ширина', key: 'width', width: 10 },
-            { header: 'Высота', key: 'height', width: 10 },
-            { header: 'Диаметр', key: 'dia', width: 10 },
-            { header: 'Сезонность', key: 'season', width: 15 },
-            { header: 'Шипы', key: 'thorns', width: 10 },
-            { header: 'Продавец', key: 'saller', width: 15 },
-            { header: 'Цена', key: 'price', width: 15 },
+            //{ header: 'Ширина', key: 'width', width: 10 },
+            //{ header: 'Высота', key: 'height', width: 10 },
+            //{ header: 'Диаметр', key: 'dia', width: 10 },
+            //{ header: 'Сезонность', key: 'season', width: 15 },
+            //{ header: 'Шипы', key: 'thorns', width: 10 },
+            //{ header: 'Продавец', key: 'saller', width: 15 },
+            //{ header: 'Цена', key: 'price', width: 15 },
             { header: 'Ссылка', key: 'link', width: 30 },
-            //{ header: 'Код товара', key: 'code', width: 10 },
+            { header: 'Код товара', key: 'code', width: 15 },
         ];
         worksheet.columns = colums;
 
