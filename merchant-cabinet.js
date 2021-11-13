@@ -1,10 +1,3 @@
-//Установить NPM и Node желательно установыить NVM что бы контролировать версии
-//Установить Chrome
-//Становить WebDrver той же версии что и Chrome (Ссылку можiно взять на сайте селениума и скачать терминалом wget {ссылка})
-//Разместить драйвер в папке bin список папок можно получить так: echo $PATH, Копировать cp {начало} {конец}
-//Установить библиотеки для Node внимательние с версиями
-//Нужно помнить если парсер столкнется со страницой входа он будет молча стоять
-
 const {Builder, By, Key, until} = require('selenium-webdriver');
 const { Options } = require('selenium-webdriver/chrome');
 const fetch = require('node-fetch');
@@ -14,6 +7,10 @@ let fs = require('fs');
 const screen = {
     width: 1920,
     height: 1080
+};
+const config = {
+    kaspiUser: 'asi-almaty@bk.ru',
+    kaspiPass: 'QazWsx123456*',
 };
 
 (async function parser() {
@@ -25,31 +22,32 @@ const screen = {
 
     //.addArguments(["--no-sandbox"]).headless()
     //.addArguments(["--no-sandbox", "--incognito"])
-    const driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().addArguments(["--no-sandbox"]).windowSize(screen)).build();
+    const driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().addArguments(["--no-sandbox", "--log-level=3"]).windowSize(screen)).build();
 
     try {
 
-        await driver.navigate().to('https://kaspi.kz/shop/info/merchant/rs6/reviews-tab/');
-        await driver.navigate().to('https://kaspi.kz/shop/c/categories/?q=%3AallMerchants%3ARs6');
-        await driver.findElement(By.css('a[data-city-id="750000000"]')).click();
+        await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
+        await authKaspi(driver);
+        await openProductsPage(driver);
+        await calcPageCounts(driver);
 
-        for (let page = 1; page <= 54; page++) { //54
+        // for (let page = 1; page <= 54; page++) { //54
 
-            await driver.navigate().to('https://kaspi.kz/shop/c/categories/?q=%3AallMerchants%3ARs6&page='+page);
-            var tyres = await driver.findElements(By.css('.item-card__name-link'));
+        //     await driver.navigate().to('https://kaspi.kz/shop/c/categories/?q=%3AallMerchants%3ARs6&page='+page);
+        //     var tyres = await driver.findElements(By.css('.item-card__name-link'));
 
-            let links = await mapLinksObj (tyres)
-            let data = {}
+        //     let links = await mapLinksObj (tyres)
+        //     let data = {}
 
-            for (let i in links) {
-                await openTab(driver, links[i])
-            }
+        //     for (let i in links) {
+        //         await openTab(driver, links[i])
+        //     }
         
-        }
+        // }
 
     }
     finally{
-        driver.quit();
+        //driver.quit();
     }
 
     await workbook.xlsx.writeFile('files/tyres.xlsx')
@@ -302,46 +300,45 @@ async function sendNotification(step, mess) {
 
 async function authKaspi(driver) {
 
-    let link = 'https://kaspi.kz/entrance';
+    const emailInput = driver.findElement(By.css('input#email'));
+    const passInput = driver.findElement(By.css('input#password'));
+    const loginButton = driver.findElement(By.css('form#loginForm button.button'));
 
-    await driver.get(link);
+    await emailInput.sendKeys(config.kaspiUser);
 
-    let phoneInput = driver.findElement(By.css('input#txtLogin'));
-    await phoneInput.sendKeys('7714613215');
+    await passInput.sendKeys(config.kaspiPass);
 
-    let passInput = driver.findElement(By.css('input#txtPassword'));
-    await passInput.sendKeys('frXQXrtkx1');
-
-    let loginButton = driver.findElement(By.css('input.entrance__loginButton'));
     await loginButton.click();
 
-    let code = await prompt_code_async();
+}
 
-    console.log(code);
+async function openProductsPage(driver) {
 
-    await code.split('');
+    const offersLink = await driver.wait(until.elementLocated(By.css('[href="#/offers"]')), 10000);
+    await offersLink.click();
 
-    let char1 = driver.findElement(By.css('input#txtOtpChar1'));
-    await char1.sendKeys(code[0]);
+    const statusFilter = await driver.findElement(By.css(".ks-gwt-panel>._nested.panel>.grid__col:nth-child(3) select.form__col"));
+    await statusFilter.click();
 
-    let char2 = driver.findElement(By.css('input#txtOtpChar2'));
-    await char2.sendKeys(code[1]);
-
-    let char3 = driver.findElement(By.css('input#txtOtpChar3'));
-    await char3.sendKeys(code[2]);
-
-    let char4 = driver.findElement(By.css('input#txtOtpChar4'));
-    await char4.sendKeys(code[3]);
+    const statusFilterOpt = await driver.wait(
+        until.elementLocated(
+            By.css(".ks-gwt-panel>._nested.panel>.grid__col:nth-child(3) select.form__col option:nth-child(5)")
+        )
+    , 1000);
+    await statusFilterOpt.click();
 
 }
 
-async function prompt_code_async()
-{
-    prompt.start();
+async function calcPageCounts(driver) {
 
-    const {code} = await prompt.get(["code"]);
+    await driver.wait(until.elementLocated(By.css(".offer-managment__product-cell-link")), 10000);
 
-    return code;
+    const paginationLabel = await driver.findElement(By.css(".ks-gwt-pagination .gwt-HTML")); //.ks-gwt-pagination .gwt-HTML
+    const paginationLabelText = await paginationLabel.getText();
+    const paginationLabelArr = paginationLabelText.split(' ');
+    const countProducts = paginationLabelArr.pop();
+    const countPages = Math.ceil(countProducts / 10)
+
+    return countPages;
+
 }
-
-//async function 
