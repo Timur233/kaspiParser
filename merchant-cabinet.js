@@ -9,8 +9,8 @@ const screen = {
     height: 1080
 };
 const config = {
-    kaspiUser: 'asi-almaty@bk.ru',
-    kaspiPass: 'QazWsx123456*',
+    kaspiUser: 'dostar.mebel@mail.ru',
+    kaspiPass: 'Korlan7@',
 };
 
 (async function parser() {
@@ -29,21 +29,18 @@ const config = {
         await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
         await authKaspi(driver);
         await openProductsPage(driver);
-        await calcPageCounts(driver);
 
-        // for (let page = 1; page <= 54; page++) { //54
-
-        //     await driver.navigate().to('https://kaspi.kz/shop/c/categories/?q=%3AallMerchants%3ARs6&page='+page);
-        //     var tyres = await driver.findElements(By.css('.item-card__name-link'));
-
-        //     let links = await mapLinksObj (tyres)
-        //     let data = {}
-
-        //     for (let i in links) {
-        //         await openTab(driver, links[i])
-        //     }
+        const lastPage = await calcPageCounts(driver);
         
-        // }
+        for (let page = 1; page <= lastPage; page++) {
+
+            console.log(await getProductsLinks(driver));
+            
+            if (lastPage !== page) {
+                await clickNextPage(driver);
+            }
+        
+        }
 
     }
     finally{
@@ -341,4 +338,23 @@ async function calcPageCounts(driver) {
 
     return countPages;
 
+}
+
+async function getProductsLinks(driver) {
+
+    await driver.wait(until.elementLocated(By.css(".offer-managment__product-cell-link")), 10000);
+    const productLinksItems = await driver.findElements(By.css('.offer-managment__product-cell-link'));
+    const productLinks = [];
+    
+    for (let i in productLinksItems) {
+        productLinks.push(await productLinksItems[i].getAttribute('href'))
+    }
+
+    return productLinks;
+}
+
+async function clickNextPage(driver) {
+    const nextButton = driver.findElement(By.css('img.gwt-Image[aria-label="Next page"]'));
+
+    nextButton.click();
 }
