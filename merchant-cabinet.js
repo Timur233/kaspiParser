@@ -31,15 +31,16 @@ const config = {
         await openProductsPage(driver);
 
         const lastPage = await calcPageCounts(driver);
+        let page = 1;
         
-        for (let page = 1; page <= lastPage; page++) {
+        for (page; page <= lastPage; page++) {
 
             console.log(await getProductsLinks(driver));
             
             if (lastPage !== page) {
+                console.log(41);
                 await clickNextPage(driver);
             }
-        
         }
 
     }
@@ -334,16 +335,17 @@ async function calcPageCounts(driver) {
     const paginationLabelText = await paginationLabel.getText();
     const paginationLabelArr = paginationLabelText.split(' ');
     const countProducts = paginationLabelArr.pop();
-    const countPages = Math.ceil(countProducts / 10)
+    const countPages = Math.ceil(countProducts / 10);
 
     return countPages;
 
 }
 
 async function getProductsLinks(driver) {
-
-    await driver.wait(until.elementLocated(By.css(".offer-managment__product-cell-link")), 10000);
+    
+    await driver.wait(until.elementIsVisible(By.css(".offer-managment__table-wrapper>table>tbody")), 10000);
     const productLinksItems = await driver.findElements(By.css('.offer-managment__product-cell-link'));
+    
     const productLinks = [];
     
     for (let i in productLinksItems) {
