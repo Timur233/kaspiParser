@@ -343,7 +343,7 @@ async function calcPageCounts(driver) {
 
 async function getProductsLinks(driver) {
     
-    await driver.wait(until.elementIsVisible(By.css(".offer-managment__table-wrapper>table>tbody")), 10000);
+    await driver.wait(until.elementLocated(By.css(".offer-managment__product-cell-link")), 10000);
     const productLinksItems = await driver.findElements(By.css('.offer-managment__product-cell-link'));
     
     const productLinks = [];
