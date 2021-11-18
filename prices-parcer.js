@@ -2,7 +2,7 @@ const {Builder, By, Key, until} = require('selenium-webdriver');
 const { Options } = require('selenium-webdriver/chrome');
 
 const config = {
-    merchantName: 'Dostarmebel',
+    merchantName: 'Rs6',
     page: 1,
     offset: 3,
 }
@@ -31,31 +31,13 @@ const screen = {
 
         await driver.navigate().to(`https://kaspi.kz/shop/info/merchant/${config.merchantName}/reviews-tab/`);
         await driver.findElement(By.css('a[data-city-id="750000000"]')).click();
-
+        
         for (let page = config.page; page <= config.offset; page++) {
+        
             await driver.navigate().to(`https://kaspi.kz/shop/c/categories/?q=%3AallMerchants%3A${config.merchantName}&at=1&page=${page}`);
 
-            
+            console.log(await getPrices(driver));
         }
-
-        
-
-        const allCatsLink = await driver.wait(
-            until.elementLocated(
-                By.css('img.item-card__image')
-            ), 10000
-        );
-
-        const productsCountS = await allCatsLink.getText();
-        const productsCountN = productsCountS.replace('(', '').replace(')', '');
-        const pagesCount = Math.ceil(productsCountN / 12);
-
-        console.log(pagesCount);
-
-        // result = { 
-        //     status: CONST.HTTPSTATUSES.SUCCESS.OK.code, 
-        //     msg: CONST.HTTPSTATUSES.SUCCESS.OK.name 
-        // };
 
     }
     catch (e) {
@@ -63,7 +45,7 @@ const screen = {
         mainController.telegram({
             body:{
                 action: "sendMessage",
-                message: "Ошибка при парсинге товаров личного кабинета (parser): " + e
+                message: "Ошибка при парсинге товаров с сайта Kaspi.kz (parser): " + e
             }
         });
         await driver.quit();
@@ -75,5 +57,36 @@ const screen = {
     }
 
 })()
+
+async function getPrices(driver) {
+    await driver.wait(until.elementLocated(By.css('.item-card')), 10000);
+    
+    const productCards = await driver.findElements(By.css('.item-card'));
+    const productsPrices = [];
+    
+    for (i in productCards) {
+        const link = await productCards[i].findElement(By.css('.item-card__image-wrapper'));
+        const price = await productCards[i].findElement(By.css('.item-card__prices-price'));
+
+        productsPrices.push({
+            [await linkFormatter(link)]: await priceFormatter(price),
+        });
+    }
+
+    async function linkFormatter(link) {
+        const linkURL = await link.getAttribute('href');
+        const id = linkURL.match(/[^\-]*[$\?]/g);
+        return id[0].replace('/?', '');
+    }
+
+    async function priceFormatter(price) {
+        const priceStr = await price.getText();
+        
+        return priceStr.replace(' ', '').replace('₸', '').trim();
+    }
+
+    return productsPrices;
+
+}
 
 //await parser();
