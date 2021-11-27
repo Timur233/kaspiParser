@@ -24,11 +24,11 @@ const config = {
         .forBrowser('chrome')
         .setChromeOptions(new Options().addArguments([
             "--no-sandbox"
-        ]).headless().windowSize(screen)).build();
+        ]).windowSize(screen)).build();
 
     try {
 
-        await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
+        await driver.navigate().to('https://kaspi.kz/merchantcabinet/');
         await authKaspi(driver);
         await openProductsPage(driver);
 
@@ -52,11 +52,12 @@ const config = {
 
 async function authKaspi(driver) {
 
-    await driver.wait(until.elementLocated(By.css('form#loginForm button.button')), 10000);
+    await driver.wait(until.elementLocated(By.css('main.container')), 10000);
+    const parent = await driver.findElement(By.css('main.container>div:last-child'));
 
-    const emailInput = await driver.findElement(By.css('input#email'));
-    const passInput = await driver.findElement(By.css('input#password'));
-    const loginButton = await driver.findElement(By.css('form#loginForm button.button'));
+    const emailInput = await parent.findElement(By.css('input#email'));
+    const passInput = await parent.findElement(By.css('input#password'));
+    const loginButton = await parent.findElement(By.css('button.button'));
 
     await emailInput.sendKeys(config.kaspiUser);
     await passInput.sendKeys(config.kaspiPass);
