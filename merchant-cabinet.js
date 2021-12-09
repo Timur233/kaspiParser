@@ -8,8 +8,8 @@ const screen = {
 };
 
 const config = {
-    kaspiUser: 'dostar.mebel@mail.ru',
-    kaspiPass: 'Korlan7@',
+    kaspiUser: 'yiavrik@mail.ru',
+    kaspiPass: '123456QWEasd#',
 };
 
 (async function parser() {
@@ -34,18 +34,20 @@ const config = {
 
         const lastPage = await calcPageCounts(driver);
         let page = 1;
+
+        console.log(lastPage);
         
-        for (page; page <= lastPage; page++) {
-            console.log(page, await getProductsLinks(driver));
+        // for (page; page <= lastPage; page++) {
+        //     console.log(page, await getProductsLinks(driver));
             
-            if (lastPage !== page) {
-                await clickNextPage(driver);
-            }
-        }
+        //     if (lastPage !== page) {
+        //         await clickNextPage(driver);
+        //     }
+        // }
 
     }
     finally{
-        driver.quit();
+        //driver.quit();
     }
 
 })();
@@ -88,9 +90,9 @@ async function calcPageCounts(driver) {
 
     const paginationLabel = await driver.findElement(By.css(".ks-gwt-pagination .gwt-HTML")); //.ks-gwt-pagination .gwt-HTML
     const paginationLabelText = await paginationLabel.getText();
-    const paginationLabelArr = paginationLabelText.split(' ');
+    const paginationLabelArr = paginationLabelText.split(' из ');
     const countProducts = paginationLabelArr.pop();
-    const countPages = Math.ceil(countProducts / 10);
+    const countPages = Math.ceil(countProducts.replace(' ', '') / 10);
 
     return countPages;
 
