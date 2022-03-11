@@ -38,17 +38,21 @@ const screen = {
 
                 // Enter text "cheese" and perform keyboard action "Enter"
                 //await driver.findElement(By.css('a[data-city-id="750000000"]')).click();
-                await driver.findElement(By.css('.seller-table__inner table tbody'));
-                //let test = await driver.findElement(By.css('h1.item__heading'))
-                let price = await driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody tr:first-child .sellers-table__price-cell-text')), 10000);
-                let saller = await driver.wait(until.elementLocated(By.css('td.sellers-table__cell a')), 10000)
-                price = await price.getAttribute('textContent')
-                price = price.replace(/\s/g, '').replace('₸', '')
-                saller = await saller.getAttribute('textContent')
+                try {
+                    await driver.findElement(By.css('.seller-table__inner table tbody'));
+                    //let test = await driver.findElement(By.css('h1.item__heading'))
+                    let price = await driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody tr:first-child .sellers-table__price-cell-text')), 10000);
+                    let saller = await driver.wait(until.elementLocated(By.css('td.sellers-table__cell a')), 10000)
+                    price = await price.getAttribute('textContent')
+                    price = price.replace(/\s/g, '').replace('₸', '')
+                    saller = await saller.getAttribute('textContent')
 
-                log = log + '. №' + products[item].id + ':  ' + saller + ' - ' + price + 'тг.\n'
+                    log = log + '. №' + products[item].id + ':  ' + saller + ' - ' + price + 'тг.\n'
 
-                await priceHelper(products[item].id, products[item].name, products[item].minPrice, price, saller)
+                    await priceHelper(products[item].id, products[item].minPrice, price, saller);
+                } catch {
+
+                }
 
             }
 
@@ -65,7 +69,7 @@ const screen = {
 
 })();
 
-async function priceHelper(id, name, minPrice, sallerPrice, saller) {
+async function priceHelper(id, minPrice, sallerPrice, saller) {
     if (saller != 'Intexmania-kz' && saller != 'Aquaintex-asia-kz') {
         if (sallerPrice > minPrice) {
 
@@ -87,7 +91,7 @@ async function priceHelper(id, name, minPrice, sallerPrice, saller) {
 
         } else {
 
-            sendNotification('Установка новой цены', 'Товар:' + name + ' достиг минимальной цены')
+            sendNotification('Установка новой цены', 'Товар№' + id + ' достиг минимальной цены')
             return false
 
         }

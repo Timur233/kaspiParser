@@ -1,2 +1,4 @@
 cd /parser/kaspiParser
-npm parser
+node index.js
+npm cache clean --force
+exit
