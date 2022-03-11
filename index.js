@@ -21,13 +21,6 @@ const screen = {
     let products = await getProductList();
 
     try {
-        //sendNotification('Начало обхода по прайсу', '200')
-
-        await authKaspi(driver);
-
-        // Navigate to Url
-        //await driver.get('https://goolge.com/search?q=купить+бассейн+в+алматы');
-
         await driver.navigate().to('https://kaspi.kz/shop/p/bestway-58486-100738217/?c=750000000&at=1');
 
         // CHECK BOT
@@ -55,7 +48,7 @@ const screen = {
 
                 log = log + '. №' + products[item].id + ':  ' + saller + ' - ' + price + 'тг.\n'
 
-                await priceHelper(products[item].id, products[item].minPrice, price, saller)
+                await priceHelper(products[item].id, products[item].name, products[item].minPrice, price, saller)
 
             }
 
@@ -72,7 +65,7 @@ const screen = {
 
 })();
 
-async function priceHelper(id, minPrice, sallerPrice, saller) {
+async function priceHelper(id, name, minPrice, sallerPrice, saller) {
     if (saller != 'Intexmania-kz' && saller != 'Aquaintex-asia-kz') {
         if (sallerPrice > minPrice) {
 
@@ -94,7 +87,7 @@ async function priceHelper(id, minPrice, sallerPrice, saller) {
 
         } else {
 
-            //sendNotification('Установка новой цены', 'Товар №' + id + ' достиг минимальной цены')
+            sendNotification('Установка новой цены', 'Товар:' + name + ' достиг минимальной цены')
             return false
 
         }
