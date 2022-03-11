@@ -91,12 +91,11 @@ async function priceHelper(id, minPrice, sallerPrice, saller) {
 
         } else {
 
-            sendNotification('Установка новой цены', 'Товар№' + id + ' достиг минимальной цены')
+            //sendNotification('Установка новой цены', 'Товар№' + id + ' достиг минимальной цены')
             return false
 
         }
     } else {
-
 
         return false
 
@@ -131,49 +130,4 @@ async function sendNotification(step, mess) {
 
     sendMessToTelegram = fetch(encodeURI(url))
 
-}
-
-async function authKaspi(driver) {
-
-    let link = 'https://kaspi.kz/entrance';
-
-    await driver.get(link);
-
-    let phoneInput = driver.findElement(By.css('input#txtLogin'));
-    await phoneInput.sendKeys('7714613215');
-
-    let passInput = driver.findElement(By.css('input#txtPassword'));
-    await passInput.sendKeys('frXQXrtkx1');
-
-    let loginButton = driver.findElement(By.css('input.entrance__loginButton'));
-    await loginButton.click();
-
-    let code = await prompt_code_async();
-
-    console.log(code);
-
-    await code.split('');
-
-    let char1 = driver.findElement(By.css('input#txtOtpChar1'));
-    await char1.sendKeys(code[0]);
-
-    let char2 = driver.findElement(By.css('input#txtOtpChar2'));
-    await char2.sendKeys(code[1]);
-
-    let char3 = driver.findElement(By.css('input#txtOtpChar3'));
-    await char3.sendKeys(code[2]);
-
-    let char4 = driver.findElement(By.css('input#txtOtpChar4'));
-    await char4.sendKeys(code[3]);
-
-}
-
-
-async function prompt_code_async()
-{
-    prompt.start();
-
-    const {code} = await prompt.get(["code"]);
-
-    return code;
 }
