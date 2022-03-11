@@ -17,17 +17,10 @@ const screen = {
 (async function parser() {
     //.addArguments(["--no-sandbox"]).headless()
     //.addArguments(["--no-sandbox", "--incognito"])
-    const driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().addArguments(["--no-sandbox"]).windowSize(screen)).build();
+    const driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().addArguments(["--no-sandbox"]).headless().windowSize(screen)).build();
     let products = await getProductList();
 
     try {
-        //sendNotification('Начало обхода по прайсу', '200')
-
-        await authKaspi(driver);
-
-        // Navigate to Url
-        //await driver.get('https://goolge.com/search?q=купить+бассейн+в+алматы');
-
         await driver.navigate().to('https://kaspi.kz/shop/p/bestway-58486-100738217/?c=750000000&at=1');
 
         // CHECK BOT
@@ -45,17 +38,21 @@ const screen = {
 
                 // Enter text "cheese" and perform keyboard action "Enter"
                 //await driver.findElement(By.css('a[data-city-id="750000000"]')).click();
-                await driver.findElement(By.css('.seller-table__inner table tbody'));
-                //let test = await driver.findElement(By.css('h1.item__heading'))
-                let price = await driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody tr:first-child .sellers-table__price-cell-text')), 10000);
-                let saller = await driver.wait(until.elementLocated(By.css('td.sellers-table__cell a')), 10000)
-                price = await price.getAttribute('textContent')
-                price = price.replace(/\s/g, '').replace('₸', '')
-                saller = await saller.getAttribute('textContent')
+                try {
+                    await driver.findElement(By.css('.seller-table__inner table tbody'));
+                    //let test = await driver.findElement(By.css('h1.item__heading'))
+                    let price = await driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody tr:first-child .sellers-table__price-cell-text')), 10000);
+                    let saller = await driver.wait(until.elementLocated(By.css('td.sellers-table__cell a')), 10000)
+                    price = await price.getAttribute('textContent')
+                    price = price.replace(/\s/g, '').replace('₸', '')
+                    saller = await saller.getAttribute('textContent')
 
-                log = log + '. №' + products[item].id + ':  ' + saller + ' - ' + price + 'тг.\n'
+                    log = log + '. №' + products[item].id + ':  ' + saller + ' - ' + price + 'тг.\n'
 
-                await priceHelper(products[item].id, products[item].minPrice, price, saller)
+                    await priceHelper(products[item].id, products[item].minPrice, price, saller);
+                } catch {
+
+                }
 
             }
 
@@ -94,7 +91,7 @@ async function priceHelper(id, minPrice, sallerPrice, saller) {
 
         } else {
 
-            //sendNotification('Установка новой цены', 'Товар №' + id + ' достиг минимальной цены')
+            sendNotification('Установка новой цены', 'Товар№' + id + ' достиг минимальной цены')
             return false
 
         }
