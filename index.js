@@ -19,18 +19,24 @@ const screen = {
     //.addArguments(["--no-sandbox", "--incognito"])
     const driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().addArguments(["--no-sandbox"]).headless().windowSize(screen)).build();
     let products = await getProductList();
+    let parserLog = '';
+    let disableProductsLog = '';
 
     try {
-        await driver.navigate().to('https://kaspi.kz/shop/p/bestway-58486-100738217/?c=750000000&at=1');
+        await driver
+                .navigate()
+                .to('https://kaspi.kz/shop/p/bestway-58486-100738217/?c=750000000&at=1');
 
         // CHECK BOT
-        let selectCity =  await driver.wait(until.elementLocated(By.css('a[data-city-id="750000000"]')), 10000)
+        let selectCity =  await driver.wait(
+            until.elementLocated(By.css('a[data-city-id="750000000"]')), 
+            10000
+        );
+
         selectCity = await selectCity.getAttribute('textContent')
 
         if (selectCity != '') {
             await driver.findElement(By.css('a[data-city-id="750000000"]')).click();
-
-            var log = '';
 
             for (let item in products) {
 
@@ -47,19 +53,28 @@ const screen = {
                     price = price.replace(/\s/g, '').replace('₸', '')
                     saller = await saller.getAttribute('textContent')
 
-                    log = log + '. №' + products[item].id + ':  ' + saller + ' - ' + price + 'тг.\n'
+                    parserLog = parserLog + products[item].sku.replaceAll('#', '') + ':  ' + saller + ' - ' + price + 'тг.\n'
 
-                    await priceHelper(products[item].id, products[item].minPrice, price, saller);
+                    await priceHelper(
+                        products[item].id, 
+                        products[item].sku, 
+                        parseInt(products[item].minPrice), 
+                        parseInt(price), 
+                        saller
+                    );
+
                 } catch {
 
                 }
 
             }
 
-            await sendNotification('Лог обхода по прайсу\n', '\n' + log)
-            console.log(log)
+            await sendNotification('Лог обхода по прайсу\n', '\n' + parserLog);
+            await sendNotification('Товары достигшие мин. цены: \n', '\n' + disableProductsLog);
         } else {
-            await sendNotification('Начало обхода', 'Джастин у нас проблемы с защитой от ботов')
+
+            await sendNotification('Начало обхода', 'Джастин у нас проблемы с защитой от ботов');
+
         }
 
     }
@@ -67,67 +82,74 @@ const screen = {
         driver.quit();
     }
 
-})();
+    async function priceHelper(id, sku, minPrice, sallerPrice, saller) {
+        if (saller != 'Intexmania-kz' && saller != 'Aquaintex-asia-kz') {
+            if (sallerPrice > minPrice) {
+    
+                let price = sallerPrice - 10
+                let url = "https://bestway-asia.kz/integration/api/set_new_kaspi_price.php?id=" + id + '&price=' + price
+    
+                try {
+                    const setPrice = await fetch(url);
 
-async function priceHelper(id, minPrice, sallerPrice, saller) {
-    if (saller != 'Intexmania-kz' && saller != 'Aquaintex-asia-kz') {
-        if (sallerPrice > minPrice) {
-
-            let price = sallerPrice - 10
-            let url = "https://bestway-asia.kz/integration/api/set_new_kaspi_price.php?id=" + id + '&price=' + price
-
-            try {
-                const setPrice = await fetch(url)
-                if (await setPrice.ok) {
-                    return true
-                } else {
-                    await sendNotification('Установка новой цены', 'API Bestway Asia недоступен')
-                    return false
+                    if (await setPrice.ok) {
+                        return true;
+                    } else {
+                        await sendNotification('Установка новой цены', 'API Bestway Asia недоступен');
+                        return false;
+                    }
+                } catch (error) {
+                    await sendNotification('Установка новой цены', 'Ошибка отправки запроса');
+                    return false;
                 }
-            } catch (error) {
-                await sendNotification('Установка новой цены', 'Ошибка отправки запроса')
+    
+            } else {
+    
+                disableProductsLog = disableProductsLog + sku.replaceAll('#', '') + ' - Минимальная цена\n';
+                return false;
+    
+            }
+        } else {
+
+            if (sallerPrice < minPrice) {
+
+                await sendNotification('Установка новой цены', sku.replaceAll('#', '') + ' - НИЗКАЯ ЦЕНА');
+
+            }
+    
+            return false;
+    
+        }
+    }
+    
+    async function getProductList() {
+    
+        const url = "https://bestway-asia.kz/integration/parser_connect.php"
+        try {
+            const products = await fetch(url)
+            const json = await products.json()
+            if (await products.ok) {
+                return json
+            } else {
+                sendNotification('Получение списка товаров с Bestway-Asia', 'Невозможно получить список товаров \nОшибка: ' + products.status + '\nURL Link: ' + url)
                 return false
             }
-
-        } else {
-
-            //sendNotification('Установка новой цены', 'Товар№' + id + ' достиг минимальной цены')
-            return false
-
+        } catch (error) {
+            sendNotification('Получение списка товаров с Bestway-Asia', 'Ошибка запроса к bestway-asia.kz. \nОшибка: ' + error + '\nURL Link: ' + url)
         }
-    } else {
-
-        return false
-
+    
     }
-}
-
-async function getProductList() {
-
-    const url = "https://bestway-asia.kz/integration/parser_connect.php"
-    try {
-        const products = await fetch(url)
-        const json = await products.json()
-        if (await products.ok) {
-            return json
-        } else {
-            sendNotification('Получение списка товаров с Bestway-Asia', 'Невозможно получить список товаров \nОшибка: ' + products.status + '\nURL Link: ' + url)
-            return false
-        }
-    } catch (error) {
-        sendNotification('Получение списка товаров с Bestway-Asia', 'Ошибка запроса к bestway-asia.kz. \nОшибка: ' + error + '\nURL Link: ' + url)
+    
+    async function sendNotification(step, mess) {
+    
+        let token = '575889929:AAHx0Um6lHbpu52dgnP0Mpwf-4qGnno_HKQ'
+        let chat_id = '-558302682'
+        let date = new Date()
+        let message = 'Дата: ' + date + '\n\nЭтап: ' + step + '\nСообщение: ' + mess
+        let url = 'https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&parse_mode=HTML' + '&text=' + message
+    
+        const sendMessToTelegram = await fetch(encodeURI(url));
+    
     }
 
-}
-
-async function sendNotification(step, mess) {
-
-    let token = '575889929:AAHx0Um6lHbpu52dgnP0Mpwf-4qGnno_HKQ'
-    let chat_id = '-558302682'
-    let date = new Date()
-    let message = 'Дата: ' + date + '\n\nЭтап: ' + step + '\nСообщение: ' + mess
-    let url = 'https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&parse_mode=HTML' + '&text=' + message
-
-    sendMessToTelegram = fetch(encodeURI(url))
-
-}
+})();
