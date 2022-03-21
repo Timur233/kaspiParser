@@ -45,10 +45,10 @@ const screen = {
                 // Enter text "cheese" and perform keyboard action "Enter"
                 //await driver.findElement(By.css('a[data-city-id="750000000"]')).click();
                 try {
-                    await driver.findElement(By.css('.seller-table__inner table tbody'));
+                    driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody')), 50000);
                     //let test = await driver.findElement(By.css('h1.item__heading'))
-                    let price = await driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody tr:first-child .sellers-table__price-cell-text')), 10000);
-                    let saller = await driver.wait(until.elementLocated(By.css('td.sellers-table__cell a')), 10000)
+                    let price = await driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody tr:first-child .sellers-table__price-cell-text')), 50000);
+                    let saller = await driver.wait(until.elementLocated(By.css('td.sellers-table__cell a')), 50000)
                     price = await price.getAttribute('textContent')
                     price = price.replace(/\s/g, '').replace('₸', '')
                     saller = await saller.getAttribute('textContent')
@@ -63,8 +63,8 @@ const screen = {
                         saller
                     );
 
-                } catch {
-
+                } catch (e) {
+                    console.log(e, products[item]);
                 }
 
             }
