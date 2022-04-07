@@ -22,13 +22,13 @@ const screen = {
 (async function parser() {
     //.addArguments(["--no-sandbox"]).headless()
     //.addArguments(["--no-sandbox", "--incognito"])
-    const driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().addArguments(["--no-sandbox"]).headless().windowSize(screen)).build();
+    const driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().addArguments(["--no-sandbox"]).windowSize(screen)).build();
     let products = await getProductList();
     let parserLog = '';
     let disableProductsLog = '';
 
     try {
-        await driver.navigate().to('https://kaspi.kz/merchantcabinet');
+        await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
         await authKaspi(driver);
         
         await driver.switchTo().newWindow('tab');
@@ -94,7 +94,7 @@ const screen = {
 
     }
     finally{
-        //driver.quit();
+        driver.quit();
     }
 
     async function changePriceInSallerCabinet(driver, productSku, productMinPrice, productPrice) {
@@ -102,8 +102,9 @@ const screen = {
             const windows = await driver.getAllWindowHandles();
 
             await driver.switchTo().window(windows[0]);
-            await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
-            await authKaspi(driver); 
+
+            // await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
+            // await authKaspi(driver); 
             
             try {
                 const offersTab = await driver.wait(until.elementLocated(By.css('.main-nav__el-link[href="#/offers"]')), 3000);
@@ -117,18 +118,29 @@ const screen = {
 
                     await offersTab.click();
                 } catch {
-                    await driver.navigate().refresh();
-                    const offersTab = await driver.wait(until.elementLocated(By.css('.main-nav__el-link[href="#/offers"]')), 5000);
-
-                    await offersTab.click();
+                    try {
+                        await driver.navigate().refresh();
+                        const offersTab = await driver.wait(until.elementLocated(By.css('.main-nav__el-link[href="#/offers"]')), 3000);
+    
+                        await offersTab.click();
+                    } catch {
+                        await driver.navigate().refresh();
+                        const offersTab = await driver.wait(until.elementLocated(By.css('.main-nav__el-link[href="#/offers"]')), 5000);
+    
+                        await offersTab.click();
+    
+                    }
 
                 }
 
             }
 
             try {
+                await driver.wait(until.elementLocated(By.css('input[placeholder="Артикул/Товар"]')), 5000);
+
                 const search = await driver.findElement(By.css('input[placeholder="Артикул/Товар"]'));
 
+                await search.clear();
                 await search.sendKeys(productSku);
 
                 await driver.wait(until.elementLocated(By.css('.offer-managment__table-wrapper tbody tr:first-child'), 5000));
@@ -146,6 +158,7 @@ const screen = {
                     const button = await driver.findElement(By.css('.form__row._controls>.button:first-child'));
 
                     if (productMinPrice < productPrice) {
+                        await input.clear();
                         await input.sendKeys(productPrice - 10);
 
                         await button.click();
