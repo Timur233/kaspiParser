@@ -1,4 +1,4 @@
 cd /parser/kaspiParser
-node parser-width-price.js
+node parser-for-you.js
 npm cache clean --force
 exit
