@@ -256,39 +256,40 @@ const config = {
         return false;
     }
 
-    async function getOptimalPrice(id, sku, minPrice, sallerTable) {
+    async function getOptimalPrice(id, sku, productMinPrice, sallerTable) {
 
-        let optimalPrice = minPrice;
+        let optimalPrice = null;
+        const minPrice = productMinPrice - 5;
         let sallerName = sallerTable[0].saller;
         let sallerPrice = sallerTable[0].price;
 
-        if (
-            (minPrice - 5) < sallerTable[0].price 
-            && !config.myMarckets.includes(sallerTable[0].saller)
-            ) {
-                optimalPrice = sallerTable[0].price - 5;
-                sallerName = sallerTable[0].saller;
-                sallerPrice = sallerTable[0].price;
-        } else {
+        parserLog += sku.replaceAll('#', '') + ':  ' + sallerName + ' - ' + sallerPrice + 'тг.\n';
 
-            for (let offer of sallerTable) {
-                if (
-                    (minPrice - 5) < offer.price 
-                    && !config.myMarckets.includes(offer.saller)
-                    ) {
-                        optimalPrice = offer.price - 5;
-                        sallerName = offer.saller;
-                        sallerPrice = offer.price;
-
-                        break;
-                } 
-            };
-
+        if (minPrice < sallerPrice) {
             disableProductsLog += sku.replaceAll('#', '') + ' - Минимальная цена\n';
-
         }
 
-        parserLog += sku.replaceAll('#', '') + ':  ' + sallerTable[0].saller + ' - ' + sallerTable[0].price + 'тг.\n';
+        if (config.myMarckets.includes(sallerName)) {
+            return {
+                id,
+                sku,
+                minPrice,
+                sallerPrice,
+                sallerName,
+                sallerPrice
+            }
+        }
+
+        for (let offer of sallerTable) {
+            if (minPrice < offer.price && !config.myMarckets.includes(offer.saller)
+                ) {
+                    optimalPrice = offer.price - 5;
+                    sallerName = offer.saller;
+                    sallerPrice = offer.price;
+
+                    break;
+            } 
+        };
 
         return {
             id,
