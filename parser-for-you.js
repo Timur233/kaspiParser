@@ -17,7 +17,7 @@ const config = {
 (async function parser() {
     //.addArguments(["--no-sandbox"]).headless()
     //.addArguments(["--no-sandbox", "--incognito"])
-    const driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().addArguments(["--no-sandbox"]).windowSize(config.screen)).build();
+    const driver = await new Builder().forBrowser('chrome').setChromeOptions(new Options().addArguments(["--no-sandbox"]).headless().windowSize(config.screen)).build();
     let products = await getProductList();
     let parserLog = '';
     let disableProductsLog = '';
