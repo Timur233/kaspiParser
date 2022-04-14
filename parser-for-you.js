@@ -262,15 +262,33 @@ const config = {
         let sallerName = sallerTable[0].saller;
         let sallerPrice = sallerTable[0].price;
 
-        for (let offer of sallerTable) {
-            if ((minPrice - 10) < offer.price && !config.myMarckets.includes(offer.saller)) {
-                optimalPrice = offer.price - 10;
-                sallerName = offer.saller;
-                sallerPrice = offer.price;
+        if (
+            (minPrice - 5) < sallerTable[0].price 
+            && !config.myMarckets.includes(sallerTable[0].saller)
+            ) {
+                optimalPrice = sallerTable[0].price - 5;
+                sallerName = sallerTable[0].saller;
+                sallerPrice = sallerTable[0].price;
+        } else {
 
-                break;
-            } 
-        };
+            for (let offer of sallerTable) {
+                if (
+                    (minPrice - 5) < offer.price 
+                    && !config.myMarckets.includes(offer.saller)
+                    ) {
+                        optimalPrice = offer.price - 5;
+                        sallerName = offer.saller;
+                        sallerPrice = offer.price;
+
+                        break;
+                } 
+            };
+
+            disableProductsLog += sku.replaceAll('#', '') + ' - Минимальная цена\n';
+
+        }
+
+        parserLog += sku.replaceAll('#', '') + ':  ' + sallerTable[0].saller + ' - ' + sallerTable[0].price + 'тг.\n';
 
         return {
             id,
