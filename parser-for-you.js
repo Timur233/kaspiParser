@@ -22,10 +22,7 @@ const config = {
     let parserLog = '';
     let disableProductsLog = '';
 
-    try {
-        await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
-        await authKaspi(driver);
-        
+    try {    
         await driver.switchTo().newWindow('tab');
         await driver
                 .navigate()
@@ -36,7 +33,7 @@ const config = {
         config.marketWindow = windows[1];
 
         // CHECK BOT
-        let selectCity =  await driver.wait(
+        let selectCity = await driver.wait(
             until.elementLocated(By.css('a[data-city-id="750000000"]')), 
             10000
         );
@@ -55,84 +52,26 @@ const config = {
 
                 sallerTable = await getSallerTable(driver);
 
-                optimalPrices.push(await getOptimalPrice(
-                    products[item].id, 
-                    products[item].sku, 
-                    parseInt(products[item].minPrice), 
-                    Array.from(sallerTable)
-                ));
-
-                async function fn () {
-                    try {
-                        await driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody')), 5000);
-
-                        let price = await driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody tr:first-child .sellers-table__price-cell-text')), 5000);
-                        let saller = await driver.wait(until.elementLocated(By.css('td.sellers-table__cell a')), 5000)
-                        
-                        price = await price.getAttribute('textContent')
-                        price = price.replace(/\s/g, '').replace('₸', '')
-                        saller = await saller.getAttribute('textContent')
-
-                        parserLog = parserLog + products[item].sku.replaceAll('#', '') + ':  ' + saller + ' - ' + price + 'тг.\n'
-
-                        await priceHelper(
-                            products[item].id, 
-                            products[item].sku, 
-                            parseInt(products[item].minPrice), 
-                            parseInt(price), 
-                            saller
-                        );
-
-                        await changePriceInSallerCabinet(
-                            driver,
-                            products[item].sku,
-                            parseInt(products[item].minPrice), 
-                            parseInt(price),
-                            saller
-                        );
-
-                    } catch (e) {
-                        try {
-                            await driver.navigate().refresh();
-
-                            await driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody')), 15000);
-
-                            let price = await driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody tr:first-child .sellers-table__price-cell-text')), 15000);
-                            let saller = await driver.wait(until.elementLocated(By.css('td.sellers-table__cell a')), 15000)
-                            
-                            price = await price.getAttribute('textContent')
-                            price = price.replace(/\s/g, '').replace('₸', '')
-                            saller = await saller.getAttribute('textContent')
-
-                            parserLog = parserLog + products[item].sku.replaceAll('#', '') + ':  ' + saller + ' - ' + price + 'тг.\n'
-
-                            await priceHelper(
-                                products[item].id, 
-                                products[item].sku, 
-                                parseInt(products[item].minPrice), 
-                                parseInt(price), 
-                                saller
-                            );
-
-                            await changePriceInSallerCabinet(
-                                driver,
-                                products[item].sku,
-                                parseInt(products[item].minPrice), 
-                                parseInt(price),
-                                saller
-                            );
-                        } catch (e) {
-                            console.log(e);
-                        }
-                    }
+                if (sallerTable !== null) {
+                    optimalPrices.push(await getOptimalPrice(
+                        products[item].id, 
+                        products[item].sku, 
+                        parseInt(products[item].minPrice), 
+                        Array.from(sallerTable)
+                    ));
                 }
 
             }
 
+            /* Auth in Kaspi */
             await driver.switchTo().window(config.cabinetWindow);
+            await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
+            await authKaspi(driver); 
+
+            let i = 0;
 
             for (let item of optimalPrices) {
-                
+                i++;
                 if (!config.myMarckets.includes(item.sallerName)) {
                     await priceHelper(
                         item.id, 
@@ -149,6 +88,8 @@ const config = {
                         item.optimalPrice,
                         item.sallerName
                     );
+
+                    console.log(i);
                 }
 
             }
@@ -167,10 +108,7 @@ const config = {
     }
 
     async function changePriceInSallerCabinet(driver, productSku, productMinPrice, productPrice, saller) {
-        if (config.isKaspiUpdate && (saller != 'Intexmania-kz' && saller != 'Aquaintex-asia-kz')) {
-
-            // await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
-            // await authKaspi(driver); 
+        if (config.isKaspiUpdate && !config.myMarckets.includes(saller)) {
 
             let offersPageReady = false;
 
@@ -185,43 +123,63 @@ const config = {
                 }
             }
 
-            try {
-                let search = null;
+            let search = null;
+            let searchBtn = null;
+            let isEnabledButton = false;
 
-                await driver.wait(until.elementLocated(By.css('input[placeholder="Артикул/Товар"]')), 5000);
-                search = await driver.findElement(By.css('input[placeholder="Артикул/Товар"]'));
+            await driver.wait(until.elementLocated(By.css('input[placeholder="Артикул/Товар"]')), 5000);
+            search = await driver.findElement(By.css('input[placeholder="Артикул/Товар"]'));
+            searchBtn = await driver.findElement(By.css('._nested.panel button.form__col._4-12._medium_5-12._large_4-12.button'));
 
-                if (!await search.isEnabled()) {
-                    config.isKaspiUpdate = false;
-                } else {
+            isEnabledButton = await search.isEnabled();
 
-                    await search.clear();
-                    await search.sendKeys(productSku);
+            if (!isEnabledButton) {
+                config.isKaspiUpdate = false;
+            } else {
 
-                    await driver.wait(until.elementLocated(By.css('.offer-managment__table-wrapper tbody tr:first-child'), 5000));
-                
-                    const tr = driver.findElement(By.css('.offer-managment__table-wrapper tbody tr:first-child'));
-                    const sku = await driver.wait(until.elementLocated(By.css('.offer-managment__product-cell-meta-text:last-child'), 5000));
+                let trs = null;
+                let sku = null;
 
-                    if (await sku.getText() === productSku) {
-                        const link = await driver.findElement(By.css('.icon._medium._edit'));
+                await search.clear();
+                await search.sendKeys(productSku);
+                await searchBtn.click();
 
-                        await link.click();
-
-                        //////
-                        const input = await driver.wait(until.elementLocated(By.css('#price-city-750000000')), 3000);
-                        const button = await driver.findElement(By.css('.form__row._controls>.button:first-child'));
-
-                        await input.clear();
-                        await input.sendKeys(productPrice);
-
-                        await button.click();
-                    }
+                try {
+                    await driver.wait(until.elementsLocated(By.css('.offer-managment__table-wrapper tbody tr[__gwt_row]')), 3000);
+                } catch (error) {
+                    return false;
                 }
-            } catch (e) {
-                console.log(e);
-                // config.isKaspiUpdate = true;
-            } 
+
+                trs = await driver.findElements(By.css('.offer-managment__table-wrapper tbody tr'));
+                for (let tr of trs) {
+                    try {
+                        sku = await tr.findElement(By.css('.offer-managment__product-cell-meta-text:last-child'));
+
+                        if (await sku.getText() === productSku) {
+                            const link = await tr.findElement(By.css('.icon._medium._edit'));
+
+                            await link.click();
+
+                            const input = await driver.wait(until.elementLocated(By.css('#price-city-750000000')), 3000);
+                            const button = await driver.findElement(By.css('.form__row._controls>.button:first-child'));
+
+                            await input.clear();
+                            await input.sendKeys(productPrice);
+
+                            await button.click();
+
+                            break;
+                        }
+                    } catch {
+                        break;
+                    } finally{
+                        console.log('this code will be executed at all time');
+                        return "haha";
+                      }
+                }
+            }
+
+            return null;
 
         } 
     }
@@ -335,10 +293,14 @@ const config = {
             tbody = await driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody')), 5000);
             trs = await tbody.findElements(By.css('tr'));
         } catch {
-            await driver.navigate().refresh();
-
-            tbody = await driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody')), 5000);
-            trs = await tbody.findElements(By.css('tr'));
+            try {
+                await driver.navigate().refresh();
+    
+                tbody = await driver.wait(until.elementLocated(By.css('.seller-table__inner table tbody')), 5000);
+                trs = await tbody.findElements(By.css('tr'));
+            } catch {
+                return null;
+            }
         }
 
         for (let tr of trs) {
