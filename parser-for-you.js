@@ -265,7 +265,7 @@ const config = {
 
         parserLog += sku.replaceAll('#', '') + ':  ' + sallerName + ' - ' + sallerPrice + 'тг.\n';
 
-        if (minPrice < sallerPrice) {
+        if (productMinPrice > sallerPrice) {
             disableProductsLog += sku.replaceAll('#', '') + ' - Минимальная цена\n';
         }
 
