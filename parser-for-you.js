@@ -258,7 +258,7 @@ const config = {
 
     async function getOptimalPrice(id, sku, productMinPrice, sallerTable) {
 
-        let optimalPrice = null;
+        let optimalPrice = productMinPrice;
         const minPrice = productMinPrice - 5;
         let sallerName = sallerTable[0].saller;
         let sallerPrice = sallerTable[0].price;
