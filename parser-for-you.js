@@ -263,7 +263,8 @@ const config = {
         let sallerName = sallerTable[0].saller;
         let sallerPrice = sallerTable[0].price;
 
-        parserLog += sku.replaceAll('#', '') + ':  ' + sallerName + ' - ' + sallerPrice + 'тг.\n';
+        parserLog += sku.replaceAll('#', '') + ':  ' + sallerName + '\n';
+        //parserLog += sku.replaceAll('#', '') + ':  ' + sallerName + ' - ' + sallerPrice + 'тг.\n';
 
         if (productMinPrice > sallerPrice) {
             disableProductsLog += sku.replaceAll('#', '') + ' - Минимальная цена\n';
