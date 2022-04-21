@@ -264,22 +264,21 @@ const config = {
         let sallerPrice = sallerTable[0].price;
 
         parserLog += sku.replaceAll('#', '') + ':  ' + sallerName + '\n';
-        //parserLog += sku.replaceAll('#', '') + ':  ' + sallerName + ' - ' + sallerPrice + 'тг.\n';
 
         if (productMinPrice > sallerPrice) {
             disableProductsLog += sku.replaceAll('#', '') + ' - Минимальная цена\n';
         }
 
-        if (config.myMarckets.includes(sallerName)) {
-            return {
-                id,
-                sku,
-                minPrice,
-                sallerPrice,
-                sallerName,
-                sallerPrice
-            }
-        }
+        // if (config.myMarckets.includes(sallerName)) {
+        //     return {
+        //         id,
+        //         sku,
+        //         minPrice,
+        //         sallerPrice,
+        //         sallerName,
+        //         sallerPrice
+        //     }
+        // }
 
         for (let offer of sallerTable) {
             if (minPrice < offer.price && !config.myMarckets.includes(offer.saller)
