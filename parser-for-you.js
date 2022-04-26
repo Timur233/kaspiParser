@@ -266,7 +266,7 @@ const config = {
         parserLog += sku.replaceAll('#', '') + ':  ' + sallerName + '\n';
 
         if (productMinPrice > sallerPrice) {
-            disableProductsLog += sku.replaceAll('#', '') + ' - Минимальная цена\n';
+            disableProductsLog += sku.replaceAll('#', '') + ' - Минимальная цена ' + sallerPrice.toLocaleString() + 'тг.\n';
         }
 
         // if (config.myMarckets.includes(sallerName)) {
