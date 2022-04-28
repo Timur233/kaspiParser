@@ -7,7 +7,7 @@ const config = {
     isKaspiUpdate: true,
     cabinetWindow: null,
     marketWindow: null,
-    myMarckets: ['Intexmania-kz', 'Power Steel'],
+    myMarckets: ['Power Steel'],
     screen: {
         width: 1920,
         height: 1080
