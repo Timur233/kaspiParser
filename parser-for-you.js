@@ -172,7 +172,7 @@ const config = {
                             const button = await driver.findElement(By.css('.form__row._controls>.button:first-child'));
 
                             await input.clear();
-                            await input.sendKeys(productPrice);
+                            await input.sendKeys(productPrice-1);
 
                             await button.click();
 
