@@ -148,9 +148,14 @@ const config = {
                 let trs = null;
                 let sku = null;
 
-                await search.clear();
-                await search.sendKeys(productSku);
-                await searchBtn.click();
+                try {
+                    await search.clear();
+                    await search.sendKeys(productSku);
+                    await searchBtn.click();
+                } catch (er) {
+                    console.log(er);
+                    return false;
+                }
 
                 try {
                     await driver.wait(until.elementsLocated(By.css('.offer-managment__table-wrapper tbody tr[__gwt_row]')), 3000);
