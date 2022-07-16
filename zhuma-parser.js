@@ -241,7 +241,7 @@ const config = {
         parserLog += sku.replaceAll('#', '') + ':  ' + sallerName + '\n';
 
         if (productMinPrice >= optimalPrice) {
-            disableProductsLog += sku.replaceAll('#', '') + ' - Минимальная цена ' + sallerPrice.toLocaleString() + 'тг.\n';
+            disableProductsLog += sku.replaceAll('#', '') + ' - Минимальная цена \n';
             optimalPrice = productMinPrice;
         }
 
