@@ -238,10 +238,10 @@ const config = {
         const minPrice = productMinPrice;
         let sallerName = 'Kaspi Жума';
 
-        parserLog += sku.replaceAll('#', '') + ':  ' + sallerName + '\n';
+        parserLog += sku + ':  ' + sallerName + '\n'; //.replaceAll('#', '')
 
         if (productMinPrice >= optimalPrice) {
-            disableProductsLog += sku.replaceAll('#', '') + ' - Минимальная цена \n';
+            disableProductsLog += sku + ' - Минимальная цена \n';  //.replaceAll('#', '')
             optimalPrice = productMinPrice;
         }
 
