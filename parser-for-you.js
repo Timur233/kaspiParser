@@ -2,7 +2,7 @@ const {Builder, By, Key, until} = require('selenium-webdriver');
 const { Options } = require('selenium-webdriver/chrome');
 const fetch = require('node-fetch');
 const config = {
-    kaspiUser: 'Seveneleven2022@mail.ru',
+    kaspiUser: 'mtv1806.kz@mail.ru',
     kaspiPass: 'T@tyana20',
     isKaspiUpdate: true,
     cabinetWindow: null,
@@ -65,6 +65,7 @@ const config = {
                         products[item].id, 
                         products[item].sku, 
                         parseInt(products[item].minPrice), 
+                        parseInt(products[item].maxPrice), 
                         Array.from(sallerTable)
                     ));
                 }
@@ -72,9 +73,9 @@ const config = {
             }
 
             /* Auth in Kaspi */
-            await driver.switchTo().window(config.cabinetWindow);
-            await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
-            await authKaspi(driver); 
+            // await driver.switchTo().window(config.cabinetWindow);
+            // await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
+            // await authKaspi(driver); 
 
             let i = 0;
 
@@ -89,13 +90,13 @@ const config = {
                         item.sallerName
                     );
     
-                    await changePriceInSallerCabinet(
-                        driver,
-                        item.sku,
-                        item.minPrice, 
-                        item.optimalPrice,
-                        item.sallerName
-                    );
+                    // await changePriceInSallerCabinet(
+                    //     driver,
+                    //     item.sku,
+                    //     item.minPrice, 
+                    //     item.optimalPrice,
+                    //     item.sallerName
+                    // );
 
                     console.log(i);
                 }
@@ -103,6 +104,7 @@ const config = {
             }
 
             await sendNotification('Лог обхода по прайсу\n', '\n' + parserLog);
+            console.log('Лог обхода по прайсу\n', '\n' + parserLog);
             await sendNotification('Товары достигшие мин. цены: \n', '\n' + disableProductsLog);
         } else {
 
@@ -269,7 +271,7 @@ const config = {
         return false;
     }
 
-    async function getOptimalPrice(id, sku, productMinPrice, sallerTable) {
+    async function getOptimalPrice(id, sku, productMinPrice, maxPrice, sallerTable) {
 
         let optimalPrice = productMinPrice;
         const minPrice = productMinPrice - 5;
@@ -303,6 +305,8 @@ const config = {
                     break;
             } 
         };
+
+        if (maxPrice > 0 && optimalPrice > maxPrice) optimalPrice = maxPrice;
 
         return {
             id,
@@ -369,9 +373,38 @@ const config = {
         }
 
     }
+
+    function splitText(text) {
+        const maxLength = 2000;
+        const words = text.split(' ');
+        let result = [];
+        let currentLine = '';
+      
+        words.forEach(word => {
+          if ((currentLine + ' ' + word).length < maxLength) {
+            currentLine += ' ' + word;
+          } else {
+            result.push(currentLine.trim());
+            currentLine = word;
+          }
+        });
+      
+        if (currentLine) {
+          result.push(currentLine.trim());
+        }
+      
+        return result;
+      }
     
     async function sendNotification(step, mess) {
-    
+        const parts = splitText(mess);
+
+        parts.forEach(async (part, index) => {
+            await sendTelegramMessage(step, `${index + 1}/${parts.length}\n${part}`);
+        });
+    }
+
+    async function sendTelegramMessage(step, mess) {
         let token = '575889929:AAHx0Um6lHbpu52dgnP0Mpwf-4qGnno_HKQ'
         let chat_id = '-558302682'
         let date = new Date()
@@ -379,7 +412,5 @@ const config = {
         let url = 'https://api.telegram.org/bot' + token + '/sendMessage?chat_id=' + chat_id + '&parse_mode=HTML' + '&text=' + message
     
         const sendMessToTelegram = await fetch(encodeURI(url));
-    
     }
-
 })();

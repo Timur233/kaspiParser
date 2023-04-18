@@ -2,7 +2,7 @@ const {Builder, By, Key, until} = require('selenium-webdriver');
 const { Options } = require('selenium-webdriver/chrome');
 const fetch = require('node-fetch');
 const config = {
-    kaspiUser: 'Seveneleven2022@mail.ru',
+    kaspiUser: 'mtv1806.kz@mail.ru',
     kaspiPass: 'T@tyana20',
     isKaspiUpdate: true,
     myMarckets: ['Power Steel', 'Intexmania-kz'],

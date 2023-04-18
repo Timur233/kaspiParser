@@ -1,4 +1,4 @@
 cd /parser/kaspiParser
-node zhuma-parser.js
+node parser-for-you.js
 npm cache clean --force
 exit
