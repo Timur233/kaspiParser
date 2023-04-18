@@ -21,7 +21,19 @@ const config = {
         .forBrowser('chrome')
         .setChromeOptions(
             new Options()
-                .addArguments(["--no-sandbox"])
+                .addArguments([
+                    "--no-sandbox", 
+                    "--disable-extensions", 
+                    "--disable-infobars", 
+                    "--disable-plugins-discovery", 
+                    "--disable-popup-blocking", 
+                    "--disable-save-password-bubble", 
+                    "--disable-translate"
+                ])
+                .setUserPreferences({
+                    'profile.managed_default_content_settings.images': 2,
+                    'profile.managed_default_content_settings.stylesheets': 2,
+                })
                 .headless()
                 .windowSize(config.screen)
             )
@@ -61,13 +73,23 @@ const config = {
                 sallerTable = await getSallerTable(driver);
 
                 if (sallerTable !== null) {
-                    optimalPrices.push(await getOptimalPrice(
+                    const product_item = await getOptimalPrice(
                         products[item].id, 
                         products[item].sku, 
                         parseInt(products[item].minPrice), 
                         parseInt(products[item].maxPrice), 
                         Array.from(sallerTable)
-                    ));
+                    );
+
+                    if (!config.myMarckets.includes(product_item.sallerName)) {
+                        await priceHelper(
+                            product_item.id, 
+                            product_item.sku, 
+                            product_item.minPrice, 
+                            product_item.optimalPrice, 
+                            product_item.sallerName
+                        );
+                    }
                 }
 
             }
@@ -76,32 +98,6 @@ const config = {
             // await driver.switchTo().window(config.cabinetWindow);
             // await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
             // await authKaspi(driver); 
-
-            let i = 0;
-
-            for (let item of optimalPrices) {
-                i++;
-                if (!config.myMarckets.includes(item.sallerName)) {
-                    await priceHelper(
-                        item.id, 
-                        item.sku, 
-                        item.minPrice, 
-                        item.optimalPrice, 
-                        item.sallerName
-                    );
-    
-                    // await changePriceInSallerCabinet(
-                    //     driver,
-                    //     item.sku,
-                    //     item.minPrice, 
-                    //     item.optimalPrice,
-                    //     item.sallerName
-                    // );
-
-                    console.log(i);
-                }
-
-            }
 
             await sendNotification('Лог обхода по прайсу\n', '\n' + parserLog);
             console.log('Лог обхода по прайсу\n', '\n' + parserLog);
