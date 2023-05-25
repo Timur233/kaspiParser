@@ -34,7 +34,7 @@ const config = {
                     'profile.managed_default_content_settings.images': 2,
                     'profile.managed_default_content_settings.stylesheets': 2,
                 })
-                // .headless()
+                .headless()
                 .windowSize(config.screen)
             )
             .build();
