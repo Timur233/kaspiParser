@@ -210,7 +210,7 @@ const config = {
 
     async function priceHelper(id, sku, minPrice, sallerPrice, saller) {
         if (!config.myMarckets.includes('saller')) {
-            let price = sallerPrice
+            let price = sallerPrice + 10000
                 let url = "https://bestway-asia.kz/integration/api/set_new_kaspi_price.php?id=" + id + '&price=' + price
     
                 try {
