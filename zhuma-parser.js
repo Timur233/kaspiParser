@@ -41,8 +41,8 @@ const config = {
 
         }
 
-        await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
-        await authKaspi(driver); 
+        // await driver.navigate().to('https://kaspi.kz/merchantcabinet/login');
+        // await authKaspi(driver); 
 
         let i = 0;
 
@@ -57,13 +57,13 @@ const config = {
                     item.sallerName
                 );
 
-                await changePriceInSallerCabinet(
-                    driver,
-                    item.sku,
-                    item.minPrice, 
-                    item.optimalPrice,
-                    item.sallerName
-                );
+                // await changePriceInSallerCabinet(
+                //     driver,
+                //     item.sku,
+                //     item.minPrice, 
+                //     item.optimalPrice,
+                //     item.sallerName
+                // );
 
                 console.log(i);
             }
@@ -241,7 +241,7 @@ const config = {
         parserLog += sku.replaceAll('#', '') + ':  ' + sallerName + '\n';
 
         if (productMinPrice >= optimalPrice) {
-            disableProductsLog += sku.replaceAll('#', '') + ' - Минимальная цена ' + sallerPrice.toLocaleString() + 'тг.\n';
+            disableProductsLog += sku.replaceAll('#', '') + ' - Минимальная цена ' + productPrice.toLocaleString() + 'тг.\n';
             optimalPrice = productMinPrice;
         }
 
