@@ -1,3 +1,3 @@
 cd /parser/kaspiParser
-node parser-width-saller-cabinet.js
+node parser-width-saller-cabinet-zhuma.js
 exit
