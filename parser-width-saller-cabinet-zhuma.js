@@ -70,11 +70,13 @@ const config = {
                 } catch {}
 
                 await driver.navigate().to('https://kaspi.kz/mc/#/products/ACTIVE/1');
-                await findProduct(
-                    driver,
-                    products[item].sku, 
-                );
-                await changePriceInSallerCabinet(driver, products[item].price);
+                try {
+                    await findProduct(
+                        driver,
+                        products[item].sku, 
+                    );
+                    await changePriceInSallerCabinet(driver, products[item].price);
+                } catch {}
             }
 
             await sendNotification('Лог обхода по прайсу + ЛК\n', '\n' + parserLog);
@@ -108,13 +110,16 @@ const config = {
     }
 
     async function findProduct(driver, productSku) {
-
         try {
-            await driver.wait(until.elementLocated(By.css('.timeOut_err')), 5000);
-        } catch {}
+            await driver.wait(until.stalenessOf(await driver.findElement(By.css('.loading-background'))), 30000);
+        } catch (error) {
+            try {
+                await driver.wait(until.elementLocated(By.css('.timeOut_err')), 10000);
+            } catch {}
+        }
 
-        const searchInput = await driver.findElement(By.css('.search input[type="search"]'));
-        const searchButton = await driver.findElement(By.css('.search button[type="button"]'));
+        const searchInput = await driver.wait(until.elementLocated(By.css('.search input[type="search"]')), 5000);
+        const searchButton = await driver.wait(until.elementLocated(By.css('.search button[type="button"]')), 5000);
         let productRows = null;
 
         await searchInput.clear();
@@ -122,7 +127,15 @@ const config = {
         await searchButton.click();
 
         try {
-            await driver.wait(until.elementLocated(By.css('.timeOut_err')), 5000);
+            await driver.wait(until.stalenessOf(await driver.findElement(By.css('.loading-background'))), 30000);
+        } catch (error) {
+            try {
+                await driver.wait(until.elementLocated(By.css('.timeOut_err')), 10000);
+            } catch {}
+        }
+
+        try {
+            await driver.wait(until.elementLocated(By.css('.timeOut_err')), 3000);
         } catch {}
 
         productRows = await driver.findElements(By.css('.table-wrapper table.table tbody tr'));
