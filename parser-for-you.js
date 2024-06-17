@@ -317,6 +317,7 @@ const config = {
         if (maxPrice > 0 && optimalPrice > maxPrice) optimalPrice = maxPrice;
 
         console.log('sallerName', sallerName);
+        console.log('productMinPrice', productMinPrice);
         console.log('minPrice', minPrice);
         console.log('optimalPrice', optimalPrice);
 
