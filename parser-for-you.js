@@ -282,7 +282,7 @@ const config = {
     async function getOptimalPrice(id, sku, productMinPrice, maxPrice, sallerTable) {
 
         let optimalPrice = productMinPrice;
-        const minPrice = productMinPrice - calculateDiscount(productMinPrice);
+        const minPrice = productMinPrice - calculateDiscount(Number(productMinPrice));
         let sallerName = sallerTable[0].saller;
         let sallerPrice = sallerTable[0].price;
 
@@ -306,7 +306,7 @@ const config = {
         for (let offer of sallerTable) {
             if (minPrice < offer.price && !config.myMarckets.includes(offer.saller)
                 ) {
-                    optimalPrice = offer.price - calculateDiscount(offer.price);
+                    optimalPrice = offer.price - calculateDiscount(Number(offer.price));
                     sallerName = offer.saller;
                     sallerPrice = offer.price;
 
