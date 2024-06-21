@@ -127,7 +127,7 @@ const config = {
                 }
             }
 
-            await sendNotification('Лог обхода по прайсу + ЛК\n', '\n' + parserLog);
+            await sendNotification('Лог обхода по прайсу + Личный кабинет\n', '\n' + parserLog);
             await sendNotification('Товары достигшие мин. цены: \n', '\n' + disableProductsLog);
         } else {
 
