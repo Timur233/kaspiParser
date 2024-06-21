@@ -2,8 +2,8 @@ const {Builder, By, Key, until} = require('selenium-webdriver');
 const { Options } = require('selenium-webdriver/chrome');
 const fetch = require('node-fetch');
 const config = {
-    kaspiUser: 'intexmania@mail.ru',
-    kaspiPass: 'Bestway@asia23',
+    kaspiUser: 'beard.095@mail.ru',
+    kaspiPass: 'Bestway@sia23',
     isKaspiUpdate: true,
     cabinetWindow: null,
     marketWindow: null,
@@ -39,6 +39,11 @@ const config = {
             )
             .build();
     let products = await getProductList();
+    let filter = ['#56709', '#56709_1', '#56709_2', '26784', '26784_1', '26784_2', '#28003', '#28003_1', '#28003_2',
+    '#5614X', '#5614X_1', '#28274', '#28274_1', '#28274_2', '#28274_3', '#56416', '#56416_1', '#56416_2', '#56416_3', '#56416_4',
+    '#56416_5', '#56416_6', '#56416_7', '#26648', '#28005', '#28005_1', '#28005_2', '#26646', '#26646_1', 
+    '#28210', '#28210_1', '#28210_2', '#28210_3', '#28210_4', '#56403', '#56403_1', '#56403_2', '#56403_3', 
+    ]
     let parserLog = '';
     let disableProductsLog = '';
 
@@ -64,7 +69,9 @@ const config = {
             const optimalPrices = [];
 
             await driver.findElement(By.css('a[data-city-id="750000000"]')).click();
-            for (let item in products.slice(0, 50)) {
+            for (let item in products) {
+
+                if (!filter.includes(products[item].sku)) continue;
 
                 let sallerTable = null;
 
@@ -129,7 +136,8 @@ const config = {
         }
 
     }
-    catch {
+    catch (e) {
+        console.log(e)
         driver.quit();
     }
     finally{
@@ -138,17 +146,22 @@ const config = {
 
     async function authKaspi(driver) {
         await driver.wait(until.elementLocated(By.css('.tabs')), 10000);
+
         const parent = await driver.findElement(By.css('.tabs > ul > li:not(.is-active) > a'));
 
         await parent.click();
 
-        const emailInput = await driver.findElement(By.css('input#user_email'));
-        const loginButton = await driver.findElement(By.css('.login button.button'));
+        try {
+            await driver.wait(until.elementLocated(By.css('.timeOut_err')), 500);
+        } catch {}
+
+        const emailInput = await driver.findElement(By.css('input#user_email_field'));
+        const loginButton = await driver.findElement(By.css('#continue_button'));
 
         await emailInput.sendKeys(config.kaspiUser);
         await loginButton.click();
 
-        const passInput = await driver.findElement(By.css('[type="password"]'));
+        const passInput = await driver.findElement(By.css('input#password_field'));
         await passInput.sendKeys(config.kaspiPass);
 
         await loginButton.click();
@@ -180,7 +193,7 @@ const config = {
         await searchButton.click();
 
         try {
-            await driver.wait(until.elementLocated(By.css('.timeOut_err')), 3000);
+            await driver.wait(until.elementLocated(By.css('.timeOut_err')), 4000);
         } catch {}
 
         productRows = await driver.findElements(By.css('.table-wrapper table.table tbody tr'));
@@ -190,9 +203,14 @@ const config = {
 
             const subTitle = await row.findElement(By.css('.media-content p.subtitle')).getAttribute('innerHTML');
             const rowSku = subTitle.split('<br>')[1]?.trim();
-      
+
+            
             if (productSku === rowSku) {
-                const productLink = await row.findElement(By.css('td:last-child div.mr-2'));
+                const moreButton = await row.findElement(By.css('td:last-child .dropdown-trigger'));
+
+                moreButton.click();
+
+                const productLink = await row.findElement(By.css('td:last-child .dropdown-content > a:first-child'));
         
                 await productLink.click();
 
@@ -203,15 +221,20 @@ const config = {
 
     async function changePriceInSallerCabinet(driver, productPrice) {
         try {
-            await driver.wait(until.elementLocated(By.css('.timeOut_err')), 3500);
-        } catch {}
+            try {
+                await driver.wait(until.elementLocated(By.css('.timeOut_err')), 3500);
+            } catch {}
 
-        const priceInput = await driver.findElement(By.css('.table-wrapper table.table thead tr.is-subheading div.th-wrap input.input'));
-        const saveButton = await driver.findElement(By.css('.tab-item .block button.is-primary'));
+            const priceInput = await driver.findElement(By.css('.table-wrapper tr.is-subheading > th:nth-child(2) input[inputmode="numeric"]'));
+            try {
+                await driver.wait(until.elementLocated(By.css('.timeOut_err')), 100);
+            } catch {}
+            const saveButton = await driver.findElement(By.css('.block button.is-primary'));
 
-        await priceInput.clear();
-        await priceInput.sendKeys(productPrice);
-        await saveButton.click();
+            await priceInput.clear();
+            await priceInput.sendKeys(productPrice);
+            await saveButton.click();
+        } catch(e) {console.log(e)}
     }
 
     async function priceHelper(id, sku, minPrice, sallerPrice, saller) {
@@ -273,10 +296,22 @@ const config = {
         return false;
     }
 
+    async function calculateDiscount(price) {
+        if (price < 10000) {
+            return 11;
+        } else if (price > 1000000) {
+            return 150;
+        } else {
+            const discount = 11 + (price - 10000) * (150 - 11) / (1000000 - 10000);
+            
+            return Math.round(Math.max(11, Math.min(150, discount)));
+        }
+    }
+
     async function getOptimalPrice(id, sku, productMinPrice, maxPrice, sallerTable) {
 
         let optimalPrice = productMinPrice;
-        const minPrice = productMinPrice - 11;
+        const minPrice = productMinPrice - await calculateDiscount(Number(productMinPrice));
         let sallerName = sallerTable[0].saller;
         let sallerPrice = sallerTable[0].price;
 
@@ -300,13 +335,17 @@ const config = {
         for (let offer of sallerTable) {
             if (minPrice < offer.price && !config.myMarckets.includes(offer.saller)
                 ) {
-                    optimalPrice = offer.price - 11;
+                    optimalPrice = offer.price - await calculateDiscount(Number(offer.price));
                     sallerName = offer.saller;
                     sallerPrice = offer.price;
 
                     break;
             } 
         };
+
+        console.log('sku', sku);
+        console.log('optimal', optimalPrice);
+        console.log('saller', sallerPrice);
 
         if (maxPrice > 0 && optimalPrice > maxPrice) optimalPrice = maxPrice;
 
