@@ -106,6 +106,7 @@ function renderLayout(title, content) {
     .pill { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 700; background: rgba(110,215,191,0.16); color: var(--good); border: 1px solid rgba(110,215,191,0.24); }
     .pill.failed { background: rgba(255,142,142,0.14); color: var(--bad); border-color: rgba(255,142,142,0.24); }
     .pill.stopped { background: rgba(255,181,92,0.14); color: var(--warn); border-color: rgba(255,181,92,0.24); }
+    .pill.warn { background: rgba(255,181,92,0.14); color: var(--warn); border-color: rgba(255,181,92,0.24); }
     .pill.no { background: rgba(255,142,142,0.14); color: var(--bad); border-color: rgba(255,142,142,0.24); }
     .pill.yes { background: rgba(110,215,191,0.16); color: var(--good); border-color: rgba(110,215,191,0.24); }
     .section { margin-top: 28px; }
@@ -163,6 +164,21 @@ function renderStatus(status) {
 
 function renderBooleanPill(value) {
   return value ? '<span class="pill yes">yes</span>' : '<span class="pill no">no</span>';
+}
+
+function renderMinPrice(value, ourPrice) {
+  const minPrice = Number(value ?? 0);
+  const currentPrice = Number(ourPrice ?? 0);
+
+  if (!minPrice) {
+    return escapeHtml(String(value ?? ''));
+  }
+
+  if (currentPrice && currentPrice <= minPrice) {
+    return `<span class="pill warn">${escapeHtml(String(minPrice))}</span>`;
+  }
+
+  return escapeHtml(String(minPrice));
 }
 
 function formatPercent(value) {
@@ -861,6 +877,7 @@ function renderRunDetails(run) {
         <td>${escapeHtml(String(item.competitorPrice ?? ''))}</td>
         <td>${escapeHtml(item.targetCompetitor || '')}</td>
         <td>${escapeHtml(String(item.targetCompetitorPrice ?? ''))}</td>
+        <td>${renderMinPrice(item.minPrice, item.ourPrice)}</td>
         <td>${escapeHtml(String(item.ourPrice ?? ''))}</td>
         <td>${renderBooleanPill(item.ownSellerFirst)}</td>
         <td>${renderBooleanPill(item.remoteUpdated)}</td>
@@ -888,13 +905,14 @@ function renderRunDetails(run) {
             <th>Цена первого</th>
             <th>Подстраиваемся под</th>
             <th>Цена ориентира</th>
+            <th>Мин. цена</th>
             <th>Наша цена</th>
             <th>Мы первые</th>
             <th>API</th>
             <th>Кабинет</th>
           </tr>
         </thead>
-        <tbody>${resultRows || '<tr><td colspan="9">Нет данных по товарам.</td></tr>'}</tbody>
+        <tbody>${resultRows || '<tr><td colspan="10">Нет данных по товарам.</td></tr>'}</tbody>
       </table>
     </div>
   `;

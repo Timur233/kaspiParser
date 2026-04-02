@@ -125,6 +125,7 @@ const {
       runTracker.recordProductResult({
         sku: product.sku,
         link: product.link,
+        minPrice: Number(product.minPrice),
         competitor: optimalPrice.firstSellerName,
         competitorPrice: optimalPrice.firstSellerPrice,
         targetCompetitor: optimalPrice.sallerName,

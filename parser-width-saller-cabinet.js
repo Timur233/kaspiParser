@@ -220,6 +220,7 @@ async function changePriceInSellerCabinet(driver, productPrice) {
       runTracker.recordProductResult({
         sku: product.sku,
         link: product.link,
+        minPrice: Number(product.minPrice),
         competitor: optimalPrice.firstSellerName,
         competitorPrice: optimalPrice.firstSellerPrice,
         targetCompetitor: optimalPrice.sallerName,
@@ -266,6 +267,7 @@ async function changePriceInSellerCabinet(driver, productPrice) {
         runTracker.recordProductResult({
           sku: item.sku,
           link: item.link,
+          minPrice: Number(item.minPrice),
           competitor: item.firstSellerName,
           competitorPrice: item.firstSellerPrice,
           targetCompetitor: item.sallerName,
