@@ -68,7 +68,7 @@ const defaultConfig = {
     // Список "наших" продавцов.
     // Если в выдаче первым идёт кто-то из этого списка, парсер не пытается
     // реагировать как на чужого конкурента.
-    ownSellers: ['Power Steel', 'Intexmania-kz', 'Aquaintex-asia-kz', 'BESTWAY ASIA'],
+    ownSellers: ['Intexmania-kz', 'Aquaintex-asia-kz', 'BESTWAY ASIA'],
   },
   pricing: {
     undercut: {
@@ -127,6 +127,21 @@ const defaultConfig = {
     telegram: {
       // Сколько строк с товарами максимум показывать в одном уведомлении.
       maxDetailLines: 12,
+
+      // Список Telegram-упоминаний для аварийных уведомлений.
+      // Используется, когда парсер упал или Kaspi не дал нормально стартовать.
+      // Примеры: ['@admin1', '@admin2']
+      adminMentions: [],
+    },
+  },
+  statistics: {
+    // Базовая папка статистики.
+    // Внутри неё будет лежать один файл SQLite `statistics.sqlite`.
+    // Старые JSON-документы из `runs/` используются только для разовой миграции истории.
+    storageDir: 'data/statistics',
+    ui: {
+      // Порт маленького веб-интерфейса для просмотра прогонов.
+      port: 3080,
     },
   },
   accounts: {

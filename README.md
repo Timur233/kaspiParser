@@ -22,6 +22,14 @@ npm run parser:for-you:headed
 npm run parser:seller-cabinet:headed
 ```
 
+Интерфейс статистики:
+
+```bash
+npm run stats:ui
+```
+
+После этого открой [http://localhost:3080](http://localhost:3080)
+
 На Windows можно запускать и через:
 
 - `parser.bat`
@@ -36,6 +44,8 @@ npm run parser:seller-cabinet:headed
 
 - `pricing.undercut.mode` - режим отступа от конкурента
 - `pricing.undercut.fixed.amount` - фиксированная сумма отступа
+- `statistics.storageDir` - где лежит база `statistics.sqlite` и служебные данные статистики
+- `statistics.ui.port` - порт локального интерфейса статистики
 - учётки Kaspi
 - Telegram-уведомления
 - `parsers.forYou`
@@ -112,3 +122,14 @@ module.exports = {
 Chrome теперь запускается с профилем внутри `.runtime/chrome`, а после завершения сессии эта папка удаляется автоматически. Это уменьшает мусор в системных temp-директориях, особенно на Windows.
 
 Начиная с обновления `selenium-webdriver`, драйвер Chrome больше не нужно обновлять вручную. Selenium Manager сам подбирает подходящий драйвер и хранит кэш в `.runtime/selenium`.
+
+## Статистика
+
+Статистика прогонов отделена от логики парсинга:
+
+- `src/storage/` отвечает за сохранение прогонов в SQLite
+- `src/ui/` отвечает за локальный просмотр статистики
+- парсеры только отдают события в трекер прогона
+
+Каждый завершённый прогон сохраняется в один файл базы `data/statistics/statistics.sqlite`.
+Если в `data/statistics/runs/` остались старые JSON-прогоны, они будут автоматически импортированы в SQLite при первом обращении к статистике.

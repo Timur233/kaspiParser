@@ -10,11 +10,13 @@
     "parser:for-you:headed": "node scripts/run-parser.js for-you --headed",
     "parser:seller-cabinet": "node scripts/run-parser.js seller-cabinet",
     "parser:seller-cabinet:headed": "node scripts/run-parser.js seller-cabinet --headed",
-    "check": "node --check parser-for-you.js && node --check parser-width-saller-cabinet.js && node --check src/config.js && node --check src/browser.js && node --check src/kaspi.js && node --check scripts/doctor.js && node --check scripts/run-parser.js"
+    "stats:ui": "node src/ui/statistics-server.js",
+    "check": "node --check parser-for-you.js && node --check parser-width-saller-cabinet.js && node --check src/config.js && node --check src/browser.js && node --check src/kaspi.js && node --check scripts/doctor.js && node --check scripts/run-parser.js && node --check src/storage/file-document-store.js && node --check src/storage/sqlite-store.js && node --check src/storage/run-history.repository.js && node --check src/storage/run-tracker.js && node --check src/ui/statistics-server.js"
   },
   "author": "Iskandarov Timur",
   "license": "MIT",
   "dependencies": {
+    "better-sqlite3": "^12.8.0",
     "node-fetch": "^2.6.1",
     "prompt": "^1.2.0",
     "prompt-async": "^0.9.9",

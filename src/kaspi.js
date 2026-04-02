@@ -188,6 +188,7 @@ function getOptimalPrice(config, logs, product, sellerTable) {
   return {
     id: product.id,
     sku: product.sku,
+    link: product.link,
     minPrice,
     optimalPrice,
     sallerName,
@@ -316,6 +317,12 @@ function buildCompactDetailLines(message, maxLines) {
   return visibleLines;
 }
 
+function getAdminMentions(config) {
+  return (config.notifications.telegram?.adminMentions || [])
+    .map((item) => String(item || '').trim())
+    .filter(Boolean);
+}
+
 function buildTelegramParts(context) {
   const maxDetailLines = context.maxDetailLines || 12;
   const headerLines = [
@@ -330,6 +337,10 @@ function buildTelegramParts(context) {
 
   if (context.undercutDescription) {
     headerLines.push(`Отступ: ${escapeHtml(context.undercutDescription)}`);
+  }
+
+  if (context.alertMentions?.length > 0) {
+    headerLines.push(`Внимание: ${context.alertMentions.map((item) => escapeHtml(item)).join(' ')}`);
   }
 
   const rawDetailLines = context.message
@@ -360,6 +371,7 @@ async function sendNotification(config, context) {
     ...context,
     fullDetails: Boolean(context.fullDetails),
     maxDetailLines: config.notifications.telegram?.maxDetailLines || 12,
+    alertMentions: context.alert ? getAdminMentions(config) : [],
     undercutDescription: describeUndercut(config),
   });
 

@@ -26,3 +26,4 @@ parser.config.local.js
 
 /files
 .runtime/
+/data/statistics/

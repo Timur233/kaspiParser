@@ -1,5 +1,6 @@
 const { loadConfig } = require('./src/config');
 const { createChromeSession } = require('./src/browser');
+const { createRunTracker } = require('./src/storage/run-tracker');
 const {
   createLogs,
   createStopController,
@@ -25,6 +26,7 @@ const {
   const failedLinks = new Set();
   let products = [];
   let runState = 'completed';
+  const runTracker = await createRunTracker(config, { parserName: 'parser-for-you' });
 
   // Создаём изолированную сессию Chrome с автоматической очисткой временных файлов.
   const { driver, cleanup, sessionDir } = await createChromeSession('parser-for-you', {
@@ -34,6 +36,7 @@ const {
 
   try {
     products = await getProductList(config);
+    runTracker.setTotalProducts(products.length);
     logInfo('for-you', `Получено товаров: ${products.length}. Режим отступа: ${describeUndercut(config)}.`);
     const marketReady = await openMarketWithSelectedCity(driver, config);
 
@@ -43,6 +46,7 @@ const {
         title: 'Проблема с доступом к Kaspi',
         parserName: 'parser-for-you',
         stats: `Товаров в очереди: ${products.length}`,
+        alert: true,
         message: 'Похоже, Kaspi показал защиту от ботов.',
       });
       return;
@@ -66,6 +70,11 @@ const {
       } catch (error) {
         failedLinks.add(product.link);
         rememberFailedProduct(logs, product, `Не удалось открыть страницу: ${error.message}`);
+        runTracker.recordProblemPage({
+          sku: product.sku,
+          link: product.link,
+          reason: `Не удалось открыть страницу: ${error.message}`,
+        });
         logWarn('for-you', `${product.sku}: страница не открылась.`);
         continue;
       }
@@ -74,24 +83,55 @@ const {
       if (!sellerTable) {
         failedLinks.add(product.link);
         rememberFailedProduct(logs, product, 'Не удалось получить таблицу продавцов');
+        runTracker.recordProblemPage({
+          sku: product.sku,
+          link: product.link,
+          reason: 'Не удалось получить таблицу продавцов',
+        });
         logWarn('for-you', `Не удалось получить таблицу продавцов для ${product.sku}.`);
         continue;
       }
 
       const missingOwnSellers = rememberMissingOwnSellers(config, logs, product, sellerTable);
       if (missingOwnSellers.length > 0) {
+        runTracker.recordMissingOwnSellers({
+          sku: product.sku,
+          link: product.link,
+          missingOwnSellers,
+        });
         logWarn('for-you', `${product.sku}: не все наши магазины в карточке: ${missingOwnSellers.join(', ')}`);
       }
 
       const optimalPrice = getOptimalPrice(config, logs, product, sellerTable);
+      const remoteUpdated =
+        !config.kaspi.ownSellers.includes(optimalPrice.sallerName) && parserConfig.updateRemotePrice;
       logInfo(
         'for-you',
         `${product.sku}: конкурент ${optimalPrice.sallerName}, цена ${formatPrice(optimalPrice.sallerPrice)}, наша ${formatPrice(optimalPrice.optimalPrice)}`
       );
-      if (!config.kaspi.ownSellers.includes(optimalPrice.sallerName) && parserConfig.updateRemotePrice) {
+      if (remoteUpdated) {
         await setRemotePrice(config, optimalPrice.id, optimalPrice.optimalPrice);
         logInfo('for-you', `${product.sku}: цена отправлена во внешнее API.`);
       }
+
+      if (Number(product.minPrice) > optimalPrice.sallerPrice) {
+        runTracker.recordMinPriceHit();
+      }
+
+      if (config.kaspi.ownSellers.includes(optimalPrice.sallerName)) {
+        runTracker.recordOwnSellerFirst();
+      }
+
+      runTracker.recordProductResult({
+        sku: product.sku,
+        link: product.link,
+        competitor: optimalPrice.sallerName,
+        competitorPrice: optimalPrice.sallerPrice,
+        ourPrice: optimalPrice.optimalPrice,
+        remoteUpdated,
+        cabinetUpdated: false,
+        ownSellerFirst: config.kaspi.ownSellers.includes(optimalPrice.sallerName),
+      });
     }
   } catch (error) {
     runState = 'failed';
@@ -101,6 +141,7 @@ const {
       {
         title: 'Ошибка parser-for-you',
         parserName: 'parser-for-you',
+        alert: true,
         message: `${error.message}\nВременная папка: ${sessionDir}`,
       }
     );
@@ -110,13 +151,19 @@ const {
       runState = 'stopped';
     }
 
+    await runTracker
+      .finish(runState, {
+        stopReason: stopController.getReason(),
+      })
+      .catch(() => {});
+
     await sendNotification(config, {
       title:
         runState === 'stopped'
           ? 'Обход витрины остановлен'
           : 'Обход витрины завершён',
       parserName: 'parser-for-you',
-      stats: `Всего в очереди: ${products.length}, упёрлись в минимум: ${logs.disableProductsLog.length}, проблемных страниц: ${logs.failedProductsLog.length}${runState === 'stopped' ? `, причина: ${stopController.getReason()}` : ''}`,
+      stats: `Всего в очереди: ${products.length}, мы первые: ${runTracker.document.summary.ownSellerFirst}, упёрлись в минимум: ${logs.disableProductsLog.length}, проблемных страниц: ${logs.failedProductsLog.length}${runState === 'stopped' ? `, причина: ${stopController.getReason()}` : ''}`,
       fullDetails: true,
       message: logs.parserLog.length > 0 ? logs.parserLog.join('\n') : 'Лог обхода пуст.',
     }).catch(() => {});

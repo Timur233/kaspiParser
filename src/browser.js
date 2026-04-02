@@ -69,7 +69,7 @@ async function createChromeSession(sessionName, chromeConfig) {
   }
 
   if (chromeConfig.headless) {
-    options.headless();
+    options.addArguments('--headless=new');
   }
 
   const driver = await new Builder()
