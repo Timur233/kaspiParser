@@ -3,7 +3,7 @@ setlocal
 
 if /i "%~1"=="__hidden__" goto run
 
-mshta "vbscript:CreateObject(""WScript.Shell"").Run """"%~f0"""" __hidden__"", 0, False:close"
+powershell -NoProfile -WindowStyle Hidden -Command "Start-Process -FilePath '%ComSpec%' -ArgumentList '/c """"%~f0"""" __hidden__' -WindowStyle Hidden"
 exit /b
 
 :run
