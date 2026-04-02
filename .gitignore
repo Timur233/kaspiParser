@@ -22,5 +22,7 @@ composer.phar
 
 # sensitive data
 .env
+parser.config.local.js
 
 /files
+.runtime/

@@ -1,10 +1,16 @@
 {
   "name": "parser",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Kaspi parser scripts with shared config and Windows-friendly runtime cleanup",
+  "main": "parser-for-you.js",
   "scripts": {
-    "start": "node index"
+    "start": "node scripts/run-parser.js for-you",
+    "doctor": "node scripts/doctor.js",
+    "parser:for-you": "node scripts/run-parser.js for-you",
+    "parser:for-you:headed": "node scripts/run-parser.js for-you --headed",
+    "parser:seller-cabinet": "node scripts/run-parser.js seller-cabinet",
+    "parser:seller-cabinet:headed": "node scripts/run-parser.js seller-cabinet --headed",
+    "check": "node --check parser-for-you.js && node --check parser-width-saller-cabinet.js && node --check src/config.js && node --check src/browser.js && node --check src/kaspi.js && node --check scripts/doctor.js && node --check scripts/run-parser.js"
   },
   "author": "Iskandarov Timur",
   "license": "MIT",
@@ -12,6 +18,6 @@
     "node-fetch": "^2.6.1",
     "prompt": "^1.2.0",
     "prompt-async": "^0.9.9",
-    "selenium-webdriver": "^4.0.0-beta.4"
+    "selenium-webdriver": "^4.41.0"
   }
 }
