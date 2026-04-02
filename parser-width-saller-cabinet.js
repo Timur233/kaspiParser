@@ -209,23 +209,25 @@ async function changePriceInSellerCabinet(driver, productPrice) {
         logInfo('seller-cabinet', `${product.sku}: цена отправлена во внешнее API.`);
       }
 
-      if (Number(product.minPrice) > optimalPrice.sallerPrice) {
+      if (Number(product.minPrice) > optimalPrice.firstSellerPrice) {
         runTracker.recordMinPriceHit();
       }
 
-      if (config.kaspi.ownSellers.includes(optimalPrice.sallerName)) {
+      if (config.kaspi.ownSellers.includes(optimalPrice.firstSellerName)) {
         runTracker.recordOwnSellerFirst();
       }
 
       runTracker.recordProductResult({
         sku: product.sku,
         link: product.link,
-        competitor: optimalPrice.sallerName,
-        competitorPrice: optimalPrice.sallerPrice,
+        competitor: optimalPrice.firstSellerName,
+        competitorPrice: optimalPrice.firstSellerPrice,
+        targetCompetitor: optimalPrice.sallerName,
+        targetCompetitorPrice: optimalPrice.sallerPrice,
         ourPrice: optimalPrice.optimalPrice,
         remoteUpdated,
         cabinetUpdated: false,
-        ownSellerFirst: config.kaspi.ownSellers.includes(optimalPrice.sallerName),
+        ownSellerFirst: config.kaspi.ownSellers.includes(optimalPrice.firstSellerName),
       });
     }
 
@@ -264,8 +266,10 @@ async function changePriceInSellerCabinet(driver, productPrice) {
         runTracker.recordProductResult({
           sku: item.sku,
           link: item.link,
-          competitor: item.sallerName,
-          competitorPrice: item.sallerPrice,
+          competitor: item.firstSellerName,
+          competitorPrice: item.firstSellerPrice,
+          targetCompetitor: item.sallerName,
+          targetCompetitorPrice: item.sallerPrice,
           ourPrice: item.optimalPrice,
           remoteUpdated: false,
           cabinetUpdated: true,

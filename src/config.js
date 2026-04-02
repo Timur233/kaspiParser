@@ -218,18 +218,64 @@ function mergeDeep(base, extra) {
   return result;
 }
 
+function getRootDir() {
+  return path.resolve(__dirname, '..');
+}
+
+function getLocalConfigPath() {
+  return path.join(getRootDir(), 'parser.config.local.js');
+}
+
+function getExampleConfigPath() {
+  return path.join(getRootDir(), 'parser.config.example.js');
+}
+
+function serializeConfig(value, indent = 2) {
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return '[]';
+    }
+
+    const items = value.map((item) => `${' '.repeat(indent)}${serializeConfig(item, indent + 2)}`);
+    return `[\n${items.join(',\n')}\n${' '.repeat(Math.max(indent - 2, 0))}]`;
+  }
+
+  if (isPlainObject(value)) {
+    const entries = Object.entries(value);
+
+    if (entries.length === 0) {
+      return '{}';
+    }
+
+    const body = entries
+      .map(([key, item]) => `${' '.repeat(indent)}${key}: ${serializeConfig(item, indent + 2)}`)
+      .join(',\n');
+
+    return `{\n${body}\n${' '.repeat(Math.max(indent - 2, 0))}}`;
+  }
+
+  return JSON.stringify(value);
+}
+
+function saveLocalConfig(config) {
+  const targetPath = getLocalConfigPath();
+  const content = `module.exports = ${serializeConfig(config)};\n`;
+  fs.writeFileSync(targetPath, content, 'utf8');
+}
+
 function loadConfig() {
-  const rootDir = path.resolve(__dirname, '..');
-  const localConfigPath = path.join(rootDir, 'parser.config.local.js');
-  const exampleConfigPath = path.join(rootDir, 'parser.config.example.js');
+  const localConfigPath = getLocalConfigPath();
+  const exampleConfigPath = getExampleConfigPath();
 
   let fileConfig = {};
 
   if (fs.existsSync(localConfigPath)) {
     // Основной рабочий конфиг конкретной машины.
+    delete require.cache[require.resolve(localConfigPath)];
     fileConfig = require(localConfigPath);
   } else if (fs.existsSync(exampleConfigPath)) {
     // Фолбэк для первого запуска или новой машины.
+    delete require.cache[require.resolve(exampleConfigPath)];
     fileConfig = require(exampleConfigPath);
   }
 
@@ -249,5 +295,7 @@ function loadConfig() {
 }
 
 module.exports = {
+  getLocalConfigPath,
   loadConfig,
+  saveLocalConfig,
 };

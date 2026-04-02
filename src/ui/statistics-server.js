@@ -1,5 +1,5 @@
 const http = require('http');
-const { loadConfig } = require('../config');
+const { loadConfig, saveLocalConfig } = require('../config');
 const { getRunById, listRuns, listRunsForChart } = require('../storage/run-history.repository');
 
 const PAGE_SIZE = 20;
@@ -128,11 +128,28 @@ function renderLayout(title, content) {
     .pagination-info { color: var(--muted); font-size: 12px; }
     .chart-wrap { position: relative; min-height: 320px; }
     canvas { width: 100% !important; height: 320px !important; }
+    .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .form-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+    .field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    .field label { font-size: 12px; color: var(--muted); }
+    .field input, .field select, .field textarea { width: 100%; border: 1px solid var(--line); border-radius: 10px; background: rgba(12, 23, 38, 0.75); color: var(--text); padding: 10px 12px; font: inherit; }
+    .field textarea { min-height: 110px; resize: vertical; }
+    .field-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .field-row input { width: auto; }
+    .submit-row { display: flex; gap: 10px; margin-top: 18px; }
+    .button { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--accent); background: rgba(47,125,209,0.18); color: var(--text); text-decoration: none; font-size: 13px; cursor: pointer; }
+    .button.secondary { border-color: var(--line); background: rgba(24,49,79,0.55); color: var(--muted); }
+    .notice { margin-bottom: 18px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(110,215,191,0.28); background: rgba(110,215,191,0.12); color: var(--text); }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="wrap">
+    <div class="nav">
+      <a class="chip" href="/">Статистика</a>
+      <a class="chip" href="/settings">Настройки</a>
+    </div>
     ${content}
   </div>
 </body>
@@ -150,6 +167,310 @@ function renderBooleanPill(value) {
 
 function formatPercent(value) {
   return `${Number(value || 0).toFixed(1)}%`;
+}
+
+function isChecked(value) {
+  return value ? 'checked' : '';
+}
+
+function isSelected(value, currentValue) {
+  return value === currentValue ? 'selected' : '';
+}
+
+function normalizeList(value) {
+  return String(value || '')
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function readBody(request) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+
+    request.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+    request.on('end', () => resolve(body));
+    request.on('error', reject);
+  });
+}
+
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function toBoolean(value) {
+  return value === 'on' || value === 'true';
+}
+
+function buildEditableConfig(config) {
+  return {
+    kaspi: {
+      cityId: config.kaspi.cityId,
+      probeProductUrl: config.kaspi.probeProductUrl,
+      ownSellers: [...config.kaspi.ownSellers],
+    },
+    chrome: {
+      binaryPath: config.chrome.binaryPath,
+    },
+    pricing: {
+      undercut: {
+        mode: config.pricing.undercut.mode,
+        fixed: {
+          amount: config.pricing.undercut.fixed.amount,
+        },
+        dynamic: {
+          min: config.pricing.undercut.dynamic.min,
+          max: config.pricing.undercut.dynamic.max,
+          fromPrice: config.pricing.undercut.dynamic.fromPrice,
+          toPrice: config.pricing.undercut.dynamic.toPrice,
+        },
+        randomRange: {
+          min: config.pricing.undercut.randomRange.min,
+          max: config.pricing.undercut.randomRange.max,
+        },
+      },
+    },
+    notifications: {
+      telegramToken: config.notifications.telegramToken,
+      telegramChatId: config.notifications.telegramChatId,
+      telegram: {
+        maxDetailLines: config.notifications.telegram.maxDetailLines,
+        adminMentions: [...(config.notifications.telegram.adminMentions || [])],
+      },
+    },
+    statistics: {
+      storageDir: config.statistics.storageDir,
+      ui: {
+        port: config.statistics.ui.port,
+      },
+    },
+    accounts: {
+      forYou: {
+        user: config.accounts.forYou.user,
+        pass: config.accounts.forYou.pass,
+      },
+      sellerCabinet: {
+        user: config.accounts.sellerCabinet.user,
+        pass: config.accounts.sellerCabinet.pass,
+      },
+    },
+    parsers: {
+      forYou: {
+        headless: config.parsers.forYou.headless,
+        updateRemotePrice: config.parsers.forYou.updateRemotePrice,
+      },
+      sellerCabinet: {
+        headless: config.parsers.sellerCabinet.headless,
+        updateRemotePrice: config.parsers.sellerCabinet.updateRemotePrice,
+        updateCabinetPrice: config.parsers.sellerCabinet.updateCabinetPrice,
+        skuFilter: [...config.parsers.sellerCabinet.skuFilter],
+      },
+    },
+  };
+}
+
+function buildConfigFromForm(form) {
+  return {
+    kaspi: {
+      cityId: String(form.cityId || '').trim(),
+      probeProductUrl: String(form.probeProductUrl || '').trim(),
+      ownSellers: normalizeList(form.ownSellers),
+    },
+    chrome: {
+      binaryPath: String(form.chromeBinaryPath || '').trim(),
+    },
+    pricing: {
+      undercut: {
+        mode: String(form.undercutMode || 'fixed'),
+        fixed: {
+          amount: toNumber(form.fixedAmount, 0),
+        },
+        dynamic: {
+          min: toNumber(form.dynamicMin, 0),
+          max: toNumber(form.dynamicMax, 0),
+          fromPrice: toNumber(form.dynamicFromPrice, 0),
+          toPrice: toNumber(form.dynamicToPrice, 0),
+        },
+        randomRange: {
+          min: toNumber(form.randomMin, 0),
+          max: toNumber(form.randomMax, 0),
+        },
+      },
+    },
+    notifications: {
+      telegramToken: String(form.telegramToken || '').trim(),
+      telegramChatId: String(form.telegramChatId || '').trim(),
+      telegram: {
+        maxDetailLines: toNumber(form.maxDetailLines, 12),
+        adminMentions: normalizeList(form.adminMentions),
+      },
+    },
+    statistics: {
+      storageDir: String(form.statisticsStorageDir || 'data/statistics').trim(),
+      ui: {
+        port: toNumber(form.uiPort, 3080),
+      },
+    },
+    accounts: {
+      forYou: {
+        user: String(form.forYouUser || '').trim(),
+        pass: String(form.forYouPass || ''),
+      },
+      sellerCabinet: {
+        user: String(form.sellerCabinetUser || '').trim(),
+        pass: String(form.sellerCabinetPass || ''),
+      },
+    },
+    parsers: {
+      forYou: {
+        headless: toBoolean(form.forYouHeadless),
+        updateRemotePrice: toBoolean(form.forYouUpdateRemotePrice),
+      },
+      sellerCabinet: {
+        headless: toBoolean(form.sellerCabinetHeadless),
+        updateRemotePrice: toBoolean(form.sellerCabinetUpdateRemotePrice),
+        updateCabinetPrice: toBoolean(form.sellerCabinetUpdateCabinetPrice),
+        skuFilter: normalizeList(form.sellerCabinetSkuFilter),
+      },
+    },
+  };
+}
+
+function renderSettingsPage(config, message = '') {
+  const editable = buildEditableConfig(config);
+
+  return `
+    <h1>Настройки</h1>
+    <p class="lead">Здесь можно редактировать рабочие настройки и секреты. Сохранение записывает файл <code>parser.config.local.js</code>.</p>
+    ${message ? `<div class="notice">${escapeHtml(message)}</div>` : ''}
+    <form method="post" action="/settings">
+      <div class="form-grid">
+        <div class="form-card">
+          <h3>Kaspi</h3>
+          <div class="field">
+            <label>City ID</label>
+            <input name="cityId" value="${escapeHtml(editable.kaspi.cityId)}" />
+          </div>
+          <div class="field">
+            <label>Probe Product URL</label>
+            <input name="probeProductUrl" value="${escapeHtml(editable.kaspi.probeProductUrl)}" />
+          </div>
+          <div class="field">
+            <label>Наши магазины, по одному в строке</label>
+            <textarea name="ownSellers">${escapeHtml(editable.kaspi.ownSellers.join('\n'))}</textarea>
+          </div>
+          <div class="field">
+            <label>Путь к Chrome</label>
+            <input name="chromeBinaryPath" value="${escapeHtml(editable.chrome.binaryPath)}" />
+          </div>
+        </div>
+
+        <div class="form-card">
+          <h3>Ценообразование</h3>
+          <div class="field">
+            <label>Режим отступа</label>
+            <select name="undercutMode">
+              <option value="fixed" ${isSelected('fixed', editable.pricing.undercut.mode)}>fixed</option>
+              <option value="dynamic" ${isSelected('dynamic', editable.pricing.undercut.mode)}>dynamic</option>
+              <option value="random-range" ${isSelected('random-range', editable.pricing.undercut.mode)}>random-range</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Fixed amount</label>
+            <input name="fixedAmount" type="number" value="${escapeHtml(String(editable.pricing.undercut.fixed.amount))}" />
+          </div>
+          <div class="field">
+            <label>Dynamic min / max / fromPrice / toPrice</label>
+            <input name="dynamicMin" type="number" value="${escapeHtml(String(editable.pricing.undercut.dynamic.min))}" />
+            <input name="dynamicMax" type="number" value="${escapeHtml(String(editable.pricing.undercut.dynamic.max))}" />
+            <input name="dynamicFromPrice" type="number" value="${escapeHtml(String(editable.pricing.undercut.dynamic.fromPrice))}" />
+            <input name="dynamicToPrice" type="number" value="${escapeHtml(String(editable.pricing.undercut.dynamic.toPrice))}" />
+          </div>
+          <div class="field">
+            <label>Random min / max</label>
+            <input name="randomMin" type="number" value="${escapeHtml(String(editable.pricing.undercut.randomRange.min))}" />
+            <input name="randomMax" type="number" value="${escapeHtml(String(editable.pricing.undercut.randomRange.max))}" />
+          </div>
+        </div>
+
+        <div class="form-card">
+          <h3>Telegram и алерты</h3>
+          <div class="field">
+            <label>Telegram Token</label>
+            <input name="telegramToken" value="${escapeHtml(editable.notifications.telegramToken)}" />
+          </div>
+          <div class="field">
+            <label>Telegram Chat ID</label>
+            <input name="telegramChatId" value="${escapeHtml(editable.notifications.telegramChatId)}" />
+          </div>
+          <div class="field">
+            <label>Админы для алертов, по одному в строке</label>
+            <textarea name="adminMentions">${escapeHtml(editable.notifications.telegram.adminMentions.join('\n'))}</textarea>
+          </div>
+          <div class="field">
+            <label>Макс. строк в уведомлении</label>
+            <input name="maxDetailLines" type="number" value="${escapeHtml(String(editable.notifications.telegram.maxDetailLines))}" />
+          </div>
+        </div>
+
+        <div class="form-card">
+          <h3>Учётки</h3>
+          <div class="field">
+            <label>For You: login</label>
+            <input name="forYouUser" value="${escapeHtml(editable.accounts.forYou.user)}" />
+          </div>
+          <div class="field">
+            <label>For You: password</label>
+            <input name="forYouPass" value="${escapeHtml(editable.accounts.forYou.pass)}" />
+          </div>
+          <div class="field">
+            <label>Seller Cabinet: login</label>
+            <input name="sellerCabinetUser" value="${escapeHtml(editable.accounts.sellerCabinet.user)}" />
+          </div>
+          <div class="field">
+            <label>Seller Cabinet: password</label>
+            <input name="sellerCabinetPass" value="${escapeHtml(editable.accounts.sellerCabinet.pass)}" />
+          </div>
+        </div>
+
+        <div class="form-card">
+          <h3>Парсер For You</h3>
+          <label class="field-row"><input type="checkbox" name="forYouHeadless" ${isChecked(editable.parsers.forYou.headless)} /> Headless</label>
+          <label class="field-row"><input type="checkbox" name="forYouUpdateRemotePrice" ${isChecked(editable.parsers.forYou.updateRemotePrice)} /> Отправлять цену во внешнее API</label>
+        </div>
+
+        <div class="form-card">
+          <h3>Парсер Кабинета</h3>
+          <label class="field-row"><input type="checkbox" name="sellerCabinetHeadless" ${isChecked(editable.parsers.sellerCabinet.headless)} /> Headless</label>
+          <label class="field-row"><input type="checkbox" name="sellerCabinetUpdateRemotePrice" ${isChecked(editable.parsers.sellerCabinet.updateRemotePrice)} /> Отправлять цену во внешнее API</label>
+          <label class="field-row"><input type="checkbox" name="sellerCabinetUpdateCabinetPrice" ${isChecked(editable.parsers.sellerCabinet.updateCabinetPrice)} /> Менять цену в кабинете</label>
+          <div class="field">
+            <label>SKU filter, по одному в строке</label>
+            <textarea name="sellerCabinetSkuFilter">${escapeHtml(editable.parsers.sellerCabinet.skuFilter.join('\n'))}</textarea>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <h3>UI и хранилище</h3>
+          <div class="field">
+            <label>Папка статистики</label>
+            <input name="statisticsStorageDir" value="${escapeHtml(editable.statistics.storageDir)}" />
+          </div>
+          <div class="field">
+            <label>Порт UI</label>
+            <input name="uiPort" type="number" value="${escapeHtml(String(editable.statistics.ui.port))}" />
+          </div>
+        </div>
+      </div>
+      <div class="submit-row">
+        <button class="button" type="submit">Сохранить</button>
+        <a class="button secondary" href="/">Назад к статистике</a>
+      </div>
+    </form>
+  `;
 }
 
 function safeJson(value) {
@@ -531,6 +852,8 @@ function renderRunDetails(run) {
         <td class="mono">${escapeHtml(item.sku || '')}</td>
         <td>${escapeHtml(item.competitor || '')}</td>
         <td>${escapeHtml(String(item.competitorPrice ?? ''))}</td>
+        <td>${escapeHtml(item.targetCompetitor || '')}</td>
+        <td>${escapeHtml(String(item.targetCompetitorPrice ?? ''))}</td>
         <td>${escapeHtml(String(item.ourPrice ?? ''))}</td>
         <td>${renderBooleanPill(item.ownSellerFirst)}</td>
         <td>${renderBooleanPill(item.remoteUpdated)}</td>
@@ -554,15 +877,17 @@ function renderRunDetails(run) {
         <thead>
           <tr>
             <th>SKU</th>
-            <th>Конкурент</th>
-            <th>Цена конкурента</th>
+            <th>Первый продавец</th>
+            <th>Цена первого</th>
+            <th>Подстраиваемся под</th>
+            <th>Цена ориентира</th>
             <th>Наша цена</th>
             <th>Мы первые</th>
             <th>API</th>
             <th>Кабинет</th>
           </tr>
         </thead>
-        <tbody>${resultRows || '<tr><td colspan="7">Нет данных по товарам.</td></tr>'}</tbody>
+        <tbody>${resultRows || '<tr><td colspan="9">Нет данных по товарам.</td></tr>'}</tbody>
       </table>
     </div>
   `;
@@ -607,16 +932,33 @@ async function handleRequest(config, request, response) {
     return;
   }
 
+  if (url.pathname === '/settings' && request.method === 'GET') {
+    const message = url.searchParams.get('saved') === '1' ? 'Настройки сохранены.' : '';
+    response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    response.end(renderLayout('Настройки', renderSettingsPage(config, message)));
+    return;
+  }
+
+  if (url.pathname === '/settings' && request.method === 'POST') {
+    const body = await readBody(request);
+    const form = Object.fromEntries(new URLSearchParams(body).entries());
+    const nextConfig = buildConfigFromForm(form);
+
+    saveLocalConfig(nextConfig);
+    response.writeHead(302, { Location: '/settings?saved=1' });
+    response.end();
+    return;
+  }
+
   response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
   response.end('Not found');
 }
 
 async function main() {
-  const config = loadConfig();
-  const port = config.statistics.ui.port;
+  const port = loadConfig().statistics.ui.port;
 
   const server = http.createServer((request, response) => {
-    handleRequest(config, request, response).catch((error) => {
+    handleRequest(loadConfig(), request, response).catch((error) => {
       response.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
       response.end(`Ошибка: ${error.message}`);
     });

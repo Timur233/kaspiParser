@@ -114,23 +114,25 @@ const {
         logInfo('for-you', `${product.sku}: цена отправлена во внешнее API.`);
       }
 
-      if (Number(product.minPrice) > optimalPrice.sallerPrice) {
+      if (Number(product.minPrice) > optimalPrice.firstSellerPrice) {
         runTracker.recordMinPriceHit();
       }
 
-      if (config.kaspi.ownSellers.includes(optimalPrice.sallerName)) {
+      if (config.kaspi.ownSellers.includes(optimalPrice.firstSellerName)) {
         runTracker.recordOwnSellerFirst();
       }
 
       runTracker.recordProductResult({
         sku: product.sku,
         link: product.link,
-        competitor: optimalPrice.sallerName,
-        competitorPrice: optimalPrice.sallerPrice,
+        competitor: optimalPrice.firstSellerName,
+        competitorPrice: optimalPrice.firstSellerPrice,
+        targetCompetitor: optimalPrice.sallerName,
+        targetCompetitorPrice: optimalPrice.sallerPrice,
         ourPrice: optimalPrice.optimalPrice,
         remoteUpdated,
         cabinetUpdated: false,
-        ownSellerFirst: config.kaspi.ownSellers.includes(optimalPrice.sallerName),
+        ownSellerFirst: config.kaspi.ownSellers.includes(optimalPrice.firstSellerName),
       });
     }
   } catch (error) {

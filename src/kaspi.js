@@ -160,14 +160,16 @@ function getOptimalPrice(config, logs, product, sellerTable) {
   let optimalPrice = Number(product.minPrice);
   const productUndercut = getUndercutAmount(config, Number(product.minPrice));
   const minPrice = Number(product.minPrice) - productUndercut;
+  const firstSellerName = sellerTable[0].saller;
+  const firstSellerPrice = sellerTable[0].price;
   let sallerName = sellerTable[0].saller;
   let sallerPrice = sellerTable[0].price;
 
-  logs.parserLog.push(`${normalizeSku(product.sku)}: ${sallerName}`);
+  logs.parserLog.push(`${normalizeSku(product.sku)}: ${firstSellerName}`);
 
-  if (Number(product.minPrice) > sallerPrice) {
+  if (Number(product.minPrice) > firstSellerPrice) {
     logs.disableProductsLog.push(
-      `${normalizeSku(product.sku)} - Минимальная цена ${sallerPrice.toLocaleString('ru-RU')}тг.`
+      `${normalizeSku(product.sku)} - Минимальная цена ${firstSellerPrice.toLocaleString('ru-RU')}тг.`
     );
   }
 
@@ -191,6 +193,8 @@ function getOptimalPrice(config, logs, product, sellerTable) {
     link: product.link,
     minPrice,
     optimalPrice,
+    firstSellerName,
+    firstSellerPrice,
     sallerName,
     sallerPrice,
   };
