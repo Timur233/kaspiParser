@@ -552,6 +552,12 @@ function renderChart(runs, options) {
         backgroundColor: 'rgba(93, 182, 255, 0.18)',
       },
       {
+        label: 'Мы первые',
+        data: chartRuns.map((run) => getSummaryValue(run, 'ownSellerFirst')),
+        borderColor: '#6ed7bf',
+        backgroundColor: 'rgba(110, 215, 191, 0.18)',
+      },
+      {
         label: 'Проблемные страницы',
         data: chartRuns.map((run) => getSummaryValue(run, 'problemPages')),
         borderColor: '#ff8e8e',
@@ -593,6 +599,7 @@ function renderChart(runs, options) {
       </div>
       <div class="legend">
         <span class="legend-item"><span class="legend-line" style="background:#5db6ff"></span>Обработано</span>
+        <span class="legend-item"><span class="legend-line" style="background:#6ed7bf"></span>Мы первые</span>
         <span class="legend-item"><span class="legend-line" style="background:#ff8e8e"></span>Проблемные страницы</span>
         <span class="legend-item"><span class="legend-line" style="background:#ffb55c"></span>Без наших магазинов</span>
       </div>

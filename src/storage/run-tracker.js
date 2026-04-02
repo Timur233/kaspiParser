@@ -10,13 +10,18 @@ function createRunId(parserName) {
 }
 
 function buildSummary(document) {
+  const processedProducts = document.productResults.length;
+  const remoteUpdated = document.productResults.filter((item) => item.remoteUpdated).length;
+  const cabinetUpdated = document.productResults.filter((item) => item.cabinetUpdated).length;
+  const ownSellerFirst = document.productResults.filter((item) => item.ownSellerFirst).length;
+
   return {
     totalProducts: document.summary.totalProducts,
-    processedProducts: document.summary.processedProducts,
-    remoteUpdated: document.summary.remoteUpdated,
-    cabinetUpdated: document.summary.cabinetUpdated,
+    processedProducts,
+    remoteUpdated,
+    cabinetUpdated,
     minPriceHits: document.summary.minPriceHits,
-    ownSellerFirst: document.summary.ownSellerFirst,
+    ownSellerFirst,
     problemPages: document.problemPages.length,
     missingOwnSellers: document.missingOwnSellers.length,
   };
@@ -43,9 +48,27 @@ async function createRunTracker(config, options) {
     problemPages: [],
     missingOwnSellers: [],
   };
+  let persistQueue = Promise.resolve();
+
+  function schedulePersist() {
+    persistQueue = persistQueue
+      .catch(() => {})
+      .then(() =>
+        saveRun(config, {
+          ...document,
+          summary: {
+            ...document.summary,
+            ...buildSummary(document),
+          },
+        })
+      );
+
+    return persistQueue;
+  }
 
   function setTotalProducts(totalProducts) {
     document.summary.totalProducts = Number(totalProducts) || 0;
+    void schedulePersist();
   }
 
   function recordProductResult(result) {
@@ -56,38 +79,37 @@ async function createRunTracker(config, options) {
         ...document.productResults[existingIndex],
         ...result,
       };
+      void schedulePersist();
       return;
     }
 
     document.productResults.push(result);
-    document.summary.processedProducts += 1;
-
-    if (result.remoteUpdated) {
-      document.summary.remoteUpdated += 1;
-    }
-
-    if (result.cabinetUpdated) {
-      document.summary.cabinetUpdated += 1;
-    }
+    document.summary.processedProducts = document.productResults.length;
+    void schedulePersist();
   }
 
   function recordMinPriceHit() {
     document.summary.minPriceHits += 1;
+    void schedulePersist();
   }
 
   function recordOwnSellerFirst() {
     document.summary.ownSellerFirst += 1;
+    void schedulePersist();
   }
 
   function recordProblemPage(problemPage) {
     document.problemPages.push(problemPage);
+    void schedulePersist();
   }
 
   function recordMissingOwnSellers(item) {
     document.missingOwnSellers.push(item);
+    void schedulePersist();
   }
 
   async function finish(status, extra = {}) {
+    await persistQueue.catch(() => {});
     document.status = status;
     document.finishedAt = new Date().toISOString();
     document.stopReason = extra.stopReason || '';
@@ -98,6 +120,8 @@ async function createRunTracker(config, options) {
 
     await saveRun(config, document);
   }
+
+  await schedulePersist();
 
   return {
     document,
